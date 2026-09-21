@@ -6,6 +6,6 @@ A controlled empirical study of how mismatched missingness patterns affect metho
 Development stage
 
 ## Team
-- Ruiqi Zhao ¡ª The University of Tokyo ¡ª First Author / Project Lead
-- Yuan ¡ª SUNY Korea ¡ª Second Author / Experimental Lead
-- Deng ¡ª Anhui University of Science and Technology ¡ª Third Author / Reproducibility Lead
+- Ruiqi Zhao Â¡Âª The University of Tokyo Â¡Âª First Author / Project Lead
+- Zishun YuanÂ¡Âª SUNY Korea Â¡Âª Second Author / Experimental Lead
+- Jianfan Deng Â¡Âª Anhui University of Science and Technology Â¡Âª Third Author / Reproducibility Lead
