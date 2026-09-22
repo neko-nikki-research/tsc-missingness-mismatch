@@ -1,0 +1,13 @@
+# Exploratory imputation robustness analysis; do not pool with the main result.
+datasets: [GunPoint, ECG200, ItalyPowerDemand]
+seeds: [1, 2, 3, 4, 5]
+missing_rate: 0.2
+source_patterns: [point, block]
+target_patterns: [point, block]
+imputers: [zero, mean, linear]
+classifiers: [dtw, minirocket, stat_rf]
+validation_size: 0.25
+classifier_params:
+  stat_rf_n_estimators: 500
+  minirocket_n_kernels: 10000
+results_dir: results/multidataset_imputers

@@ -1,0 +1,12 @@
+datasets: [GunPoint]
+seeds: [1]
+missing_rate: 0.2
+source_patterns: [point]
+target_patterns: [block]
+imputers: [linear]
+classifiers: [dtw, minirocket, stat_rf]
+validation_size: 0.25
+classifier_params:
+  stat_rf_n_estimators: 500
+  minirocket_n_kernels: 10000
+results_dir: results

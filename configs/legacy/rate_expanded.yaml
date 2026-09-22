@@ -1,0 +1,14 @@
+# Formal missing-rate study with the two initially specified missingness patterns.
+datasets: [GunPoint, ECG200, ItalyPowerDemand]
+seeds: [1, 2, 3, 4, 5]
+missing_rate: 0.2
+missing_rates: [0.1, 0.2, 0.3]
+source_patterns: [point, block]
+target_patterns: [point, block]
+imputers: [linear]
+classifiers: [dtw, minirocket, stat_rf]
+validation_size: 0.25
+classifier_params:
+  stat_rf_n_estimators: 500
+  minirocket_n_kernels: 10000
+results_dir: results/rate_expanded

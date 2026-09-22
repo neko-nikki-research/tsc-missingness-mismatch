@@ -1,0 +1,14 @@
+# Protocol v1.0 supplementary robustness analysis: non-circular linear blocks.
+# Keep these results separate from the circular-block main experiment.
+datasets: [GunPoint, ECG200, ItalyPowerDemand]
+seeds: [1, 2, 3, 4, 5]
+missing_rates: [0.10, 0.20, 0.30]
+source_patterns: [point, linear_block]
+target_patterns: [point, linear_block]
+imputers: [linear]
+classifiers: [dtw, minirocket, stat_rf]
+validation_size: 0.25
+classifier_params:
+  stat_rf_n_estimators: 500
+  minirocket_n_kernels: 10000
+results_dir: results/supplementary_linear_block

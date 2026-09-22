@@ -1,0 +1,13 @@
+# Exploratory robustness study; prefix/suffix are outside the main 2 x 2 study.
+datasets: [GunPoint, ECG200, ItalyPowerDemand]
+seeds: [1, 2, 3, 4, 5]
+missing_rate: 0.2
+source_patterns: [point, block, prefix, suffix]
+target_patterns: [point, block, prefix, suffix]
+imputers: [linear]
+classifiers: [dtw, minirocket, stat_rf]
+validation_size: 0.25
+classifier_params:
+  stat_rf_n_estimators: 500
+  minirocket_n_kernels: 10000
+results_dir: results/pattern_expanded
