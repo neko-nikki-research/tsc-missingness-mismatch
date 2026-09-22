@@ -54,7 +54,11 @@ def selection_summary(rows: list[dict]) -> dict:
     oracle_names = "|".join(sorted(row["classifier"] for row in oracle_ties))
     return {
         key: first[key]
-        for key in ("dataset", "seed", "missing_rate", "source_pattern", "target_pattern", "imputer")
+        for key in (
+            "dataset", "seed", "missing_rate", "n_timepoints",
+            "n_missing_per_series", "realized_missing_rate", "source_pattern",
+            "target_pattern", "imputer",
+        )
     } | {
         "selected_classifier": selected["classifier"],
         "oracle_classifier": oracle_names,

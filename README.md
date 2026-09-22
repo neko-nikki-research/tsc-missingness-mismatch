@@ -13,7 +13,7 @@ classifier selection and deployment performance.
 | Train split | Official UCR train; kept complete and unchanged |
 | Validation split | Stratified split from official train; receives the source mask |
 | Deployment split | Official UCR test; receives the target mask |
-| Missingness matrix | Point → Point, Point → Block, Block → Point, Block → Block |
+| Missingness matrix | Point → Point, Point → circular Block, circular Block → Point, circular Block → circular Block |
 | Imputation | Linear interpolation only |
 | Candidate methods | 1NN-DTW; MiniROCKET + Ridge; statistical features + Random Forest |
 | Selection metric | Validation balanced accuracy |
@@ -66,9 +66,13 @@ tests/                          # Unit and protocol-invariant tests
 results/                        # Local generated outputs; CSVs and figures are gitignored
 ```
 
-`configs/exploratory/` may compare zero/mean imputation or prefix/suffix
-missingness in future robustness work. These configurations must be reported
-separately and must not be pooled with the main PP/PB/BP/BB conclusions.
+`configs/exploratory/` may compare zero/mean imputation, prefix/suffix
+missingness, linear blocks, or extra missingness rates in future robustness
+work. These configurations must be reported separately and must not be pooled
+with the main PP/PB/BP/BB conclusions.
+
+`configs/exploratory/six_rate_sensitivity.yaml` adds 5%, 15%, and 25% to the
+protocol rates as a separate missing-rate sensitivity analysis.
 
 ## Reproducibility guarantees
 

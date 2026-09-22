@@ -13,6 +13,8 @@ def test_metrics_uses_balanced_accuracy_not_majority_class_accuracy():
 def test_selection_uses_validation_balanced_accuracy():
     common = {
         "dataset": "Demo", "seed": 1, "missing_rate": 0.2,
+        "n_timepoints": 10, "n_missing_per_series": 2,
+        "realized_missing_rate": 0.2,
         "source_pattern": "point", "target_pattern": "block", "imputer": "linear",
     }
     rows = [
@@ -28,6 +30,8 @@ def test_selection_uses_validation_balanced_accuracy():
 def test_validation_ties_are_reproducible_and_do_not_use_test_performance():
     common = {
         "dataset": "Demo", "seed": 3, "missing_rate": 0.2,
+        "n_timepoints": 10, "n_missing_per_series": 2,
+        "realized_missing_rate": 0.2,
         "source_pattern": "point", "target_pattern": "block", "imputer": "linear",
         "val_balanced_accuracy": 0.8,
     }
@@ -46,6 +50,8 @@ def test_validation_ties_are_reproducible_and_do_not_use_test_performance():
 def test_test_oracle_tie_is_not_an_artificial_selection_error():
     common = {
         "dataset": "Demo", "seed": 4, "missing_rate": 0.2,
+        "n_timepoints": 10, "n_missing_per_series": 2,
+        "realized_missing_rate": 0.2,
         "source_pattern": "point", "target_pattern": "block", "imputer": "linear",
     }
     rows = [

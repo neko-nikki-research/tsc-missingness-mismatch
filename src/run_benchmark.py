@@ -1,6 +1,7 @@
 """Run a reproducible validation/deployment missingness benchmark."""
 
 import argparse
+import math
 import time
 from pathlib import Path
 
@@ -26,6 +27,9 @@ def run_config(config: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
             if rates is None:
                 rates = [config["missing_rate"]]
             for missing_rate in rates:
+                n_timepoints = X_train.shape[-1]
+                n_missing_per_series = math.floor(missing_rate * n_timepoints)
+                realized_missing_rate = n_missing_per_series / n_timepoints
                 for source_pattern in config["source_patterns"]:
                     # Training data stays complete. Source missingness is a validation-only
                     # selection condition, while target missingness is deployment-only.
@@ -52,6 +56,9 @@ def run_config(config: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
                                     "dataset": dataset,
                                     "seed": seed,
                                     "missing_rate": missing_rate,
+                                    "n_timepoints": n_timepoints,
+                                    "n_missing_per_series": n_missing_per_series,
+                                    "realized_missing_rate": realized_missing_rate,
                                     "source_pattern": source_pattern,
                                     "target_pattern": target_pattern,
                                     "imputer": imputer_name,

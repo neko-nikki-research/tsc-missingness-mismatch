@@ -16,12 +16,13 @@ def test_point_mask_is_reproducible_and_does_not_mutate_input():
     assert np.array_equal(masked_a[~mask_a], original[~mask_a])
 
 
-def test_block_mask_is_contiguous_and_has_floor_count():
+def test_block_mask_is_circular_contiguous_and_has_floor_count():
     X = np.zeros((3, 2, 11))
     _, mask = apply_mask(X, "block", 0.28, seed=11)
     assert np.array_equal(mask.sum(axis=-1), np.full((3, 2), 3))
     for series_mask in mask.reshape(-1, 11):
-        assert np.all(np.diff(np.flatnonzero(series_mask)) == 1)
+        # A circular block has exactly one observed-to-missing transition.
+        assert np.count_nonzero((~series_mask) & np.roll(series_mask, -1)) == 1
 
 
 def test_block_mask_uses_independent_random_start_positions():
@@ -29,6 +30,21 @@ def test_block_mask_uses_independent_random_start_positions():
     _, mask = apply_mask(X, "block", 0.2, seed=11)
     starts = [np.flatnonzero(series_mask)[0] for series_mask in mask.reshape(-1, 20)]
     assert len(set(starts)) > 1
+
+
+def test_circular_block_can_wrap_across_the_sequence_boundary():
+    X = np.zeros((1, 1, 10))
+    _, mask = apply_mask(X, "block", 0.3, seed=0)
+    assert np.array_equal(
+        mask[0, 0], [True, False, False, False, False, False, False, False, True, True]
+    )
+
+
+def test_linear_block_is_available_only_as_a_separate_pattern():
+    X = np.zeros((1, 1, 10))
+    _, mask = apply_mask(X, "linear_block", 0.3, seed=0)
+    locations = np.flatnonzero(mask[0, 0])
+    assert np.all(np.diff(locations) == 1)
 
 
 def test_prefix_and_suffix_masks_are_at_the_expected_endpoints():
