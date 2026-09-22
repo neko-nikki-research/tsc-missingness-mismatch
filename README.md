@@ -1,30 +1,31 @@
-# The Effect of Missingness Pattern Mismatch on Method Selection for Time Series Classification
+# Missingness Mismatch Benchmark for Time-Series Classification
 
-This repository contains a reproducible benchmark for testing whether a mismatch between validation-time and deployment-time temporal missingness affects classifier selection and deployment performance.
+This branch contains the protocol-compliant benchmark for testing whether a
+mismatch between validation-time and deployment-time missingness changes
+classifier selection and deployment performance.
 
-## Team
+## Main experiment at a glance
 
-* Ruiqi Zhao - The University of Tokyo - First Author and Project Lead
-* Zishun Yuan - State University of New York Korea - Experimental Lead
-* Jianfan Deng - Anhui University of Science and Technology - Reproducibility Lead
+| Component | Fixed main-experiment choice |
+| --- | --- |
+| Data | UCR univariate, equal-length, originally complete series |
+| Datasets | GunPoint, ECG200, ItalyPowerDemand |
+| Train split | Official UCR train; kept complete and unchanged |
+| Validation split | Stratified split from official train; receives the source mask |
+| Deployment split | Official UCR test; receives the target mask |
+| Missingness matrix | Point → Point, Point → Block, Block → Point, Block → Block |
+| Imputation | Linear interpolation only |
+| Candidate methods | 1NN-DTW; MiniROCKET + Ridge; statistical features + Random Forest |
+| Selection metric | Validation balanced accuracy |
+| Deployment metrics | Test balanced accuracy, post-hoc oracle, selection error, regret |
 
-## Implemented benchmark
+`selection regret = oracle test balanced accuracy − selected test balanced accuracy`
 
-- UCR datasets are loaded through aeon. Official train is split into stratified train and validation data; official train remains complete, source missingness is applied only to validation, and official test receives target missingness for simulated deployment.
-- **Main experiment only:** point and block missingness, forming the pre-specified 2 x 2 source/target matrix (PP, PB, BP, BB).
-- **Main experiment only:** linear interpolation.
-- **Main classifiers:** 1NN-DTW, MiniROCKET + Ridge linear classifier, and fixed statistical features + Random Forest.
-- Prefix/suffix missingness and zero/mean imputation are supported only for a future, separately labelled exploratory robustness analysis.
-- Selection uses validation balanced accuracy only. The test set is used only to measure deployment balanced accuracy, identify the post-hoc oracle, and calculate selection regret.
+The train split is deliberately never masked. This holds training conditions
+constant, so a difference between PP/BB and PB/BP can be attributed to the
+validation-to-deployment mismatch rather than a changed training distribution.
 
-`selection regret = oracle test balanced accuracy - selected model test balanced accuracy`
-
-The raw result file uses the explicit fields `val_balanced_accuracy` and
-`test_balanced_accuracy`. The selection result file uses
-`selected_test_balanced_accuracy` and `oracle_test_balanced_accuracy`.
-Ordinary accuracy is not calculated or written by the benchmark.
-
-## Quick start
+## Run it
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -33,27 +34,50 @@ python scripts\check_environment.py
 python -m src.run_benchmark --config configs\smoke.yaml
 ```
 
-The smoke outputs are written to `results/raw_results.csv` and `results/selection_results.csv`.
-
-## Experiment configurations
-
-- `configs/smoke.yaml`: one small GunPoint check.
-- `configs/pilot.yaml`: single GunPoint pilot with complete classifier settings.
-- `configs/rate_expanded.yaml`: 3 datasets, 5 seeds, point/block patterns, and 10%, 20%, and 30% missingness.
-- `configs/multidataset_imputers.yaml`: exploratory imputation robustness comparison; not part of the main result.
-- `configs/pattern_rate_smoke.yaml` and `configs/pattern_expanded.yaml`: exploratory prefix/suffix robustness checks; not part of the main result.
-- `configs/main_protocol_balanced.yaml`: main 2 x 2, linear-imputation study across six missingness rates, using balanced-accuracy selection.
-- `configs/rate_expanded_six_rates_balanced.yaml`: superseded historical configuration; its old TSF results are not formal protocol results.
-
-Generate summaries or the rate report with:
+Run the full protocol study with:
 
 ```powershell
-python -m src.analyze_results --results-dir results\multidataset_expanded
-python -m src.report_results --results-dir results\rate_expanded
+python -m src.run_benchmark --config configs\main_protocol_balanced.yaml
+python -m src.analyze_results --results-dir results\main_protocol_balanced
+python -m src.report_results --results-dir results\main_protocol_balanced
 ```
 
-## Reproducibility
+The raw output uses only explicit metric names: `val_balanced_accuracy`,
+`test_balanced_accuracy`, `selected_test_balanced_accuracy`, and
+`oracle_test_balanced_accuracy`. Ordinary accuracy is neither used for model
+selection nor written to the formal result files.
 
-Mask generation is deterministic for a fixed seed and never mutates its input. Every classifier in the same experimental cell receives the same masked and imputed train, validation, and test arrays. Unit tests cover masking and imputation behavior.
+## Repository map
 
-The repository protocol and contribution guidance are in [PROTOCOL.md](PROTOCOL.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+```text
+configs/
+  smoke.yaml                    # Small protocol-faithful end-to-end check
+  main_protocol_balanced.yaml   # Formal PP/PB/BP/BB study
+  exploratory/                  # Separate robustness analyses; not main results
+  legacy/                       # Superseded configs retained for history only
+src/
+  run_benchmark.py              # Main experiment runner
+  datasets.py                   # UCR loading and stratified split
+  masking.py                    # Point/block masking (prefix/suffix available only for exploration)
+  imputation.py                 # Linear/zero/mean implementations
+  classifiers.py                # Three pre-specified candidate methods
+  evaluation.py                 # Selection, oracle, and regret logic
+tests/                          # Unit and protocol-invariant tests
+results/                        # Local generated outputs; CSVs and figures are gitignored
+```
+
+`configs/exploratory/` may compare zero/mean imputation or prefix/suffix
+missingness in future robustness work. These configurations must be reported
+separately and must not be pooled with the main PP/PB/BP/BB conclusions.
+
+## Reproducibility guarantees
+
+- A fixed seed gives the same mask, and masking never mutates its input.
+- All candidate classifiers in an experimental cell see identical validation
+  and test masks.
+- Imputation only uses observed values from the same series; no test-set
+  parameters are learned.
+- The official UCR test set is never used for selection or tuning.
+
+The repository protocol and contribution guide are in [PROTOCOL.md](PROTOCOL.md)
+and [CONTRIBUTING.md](CONTRIBUTING.md).
