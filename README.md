@@ -14,6 +14,7 @@ classifier selection and deployment performance.
 | Validation split | Stratified split from official train; receives the source mask |
 | Deployment split | Official UCR test; receives the target mask |
 | Missingness matrix | Point → Point, Point → circular Block, circular Block → Point, circular Block → circular Block |
+| Missingness rates | 5%, 10%, 15%, 20%, 25%, 30% |
 | Imputation | Linear interpolation only |
 | Candidate methods | 1NN-DTW; MiniROCKET + Ridge; statistical features + Random Forest |
 | Selection metric | Validation balanced accuracy |
@@ -71,8 +72,6 @@ missingness, linear blocks, or extra missingness rates in future robustness
 work. These configurations must be reported separately and must not be pooled
 with the main PP/PB/BP/BB conclusions.
 
-`configs/exploratory/six_rate_sensitivity.yaml` adds 5%, 15%, and 25% to the
-protocol rates as a separate missing-rate sensitivity analysis.
 
 ## Reproducibility guarantees
 

@@ -5,8 +5,8 @@
 **English title:**
 **The Effect of Missingness-Pattern Mismatch on Method Selection for Time-Series Classification: A Controlled Empirical Study**
 
-**Protocol version:** v1.0
-**Project status:** Development / Protocol Frozen
+**Protocol version:** v1.1
+**Project status:** Development / Protocol updated
 **Project type:** Controlled empirical study
 **Primary task:** Univariate time-series classification
 
@@ -150,11 +150,15 @@ Linear block 不改变主实验问题，也不成为新的主要研究问题。
 
 ## 6. 缺失比例
 
-正式实验使用三个缺失比例：
+正式主实验使用六个缺失比例：
 
 $$
-10\%,20\%,30\%
+5\%,10\%,15\%,20\%,25\%,30\%
 $$
+
+本次 v1.1 更新将 5\%、15\% 和 25\% 纳入主实验，以更细致地观察
+missingness-pattern mismatch 随缺失率变化的趋势。所有六档比例均使用相同的
+数据划分、masking、插补、候选分类器和模型选择流程。
 
 对于每个序列长度 \(T\)，实际缺失数量始终定义为：
 

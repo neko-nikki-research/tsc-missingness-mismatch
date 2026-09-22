@@ -1,8 +1,8 @@
-# Protocol v1.0 main study: the point/circular-block 2 x 2 matrix (PP, PB, BP, BB).
+# Protocol v1.1 main study: the point/circular-block 2 x 2 matrix (PP, PB, BP, BB).
 # Model selection and regret use balanced accuracy; test remains deployment-only.
 datasets: [GunPoint, ECG200, ItalyPowerDemand]
 seeds: [1, 2, 3, 4, 5]
-missing_rates: [0.10, 0.20, 0.30]
+missing_rates: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
 source_patterns: [point, block]
 target_patterns: [point, block]
 imputers: [linear]
@@ -11,4 +11,4 @@ validation_size: 0.25
 classifier_params:
   stat_rf_n_estimators: 500
   minirocket_n_kernels: 10000
-results_dir: results/main_protocol_v1
+results_dir: results/main_protocol_v1_1
