@@ -6,9 +6,9 @@ missing_rates: [0.1, 0.2, 0.3]
 source_patterns: [point, block]
 target_patterns: [point, block]
 imputers: [linear]
-classifiers: [dtw, tsf, minirocket]
+classifiers: [dtw, minirocket, stat_rf]
 validation_size: 0.25
 classifier_params:
-  tsf_n_estimators: 200
+  stat_rf_n_estimators: 500
   minirocket_n_kernels: 10000
 results_dir: results/rate_expanded

@@ -27,8 +27,8 @@ def summarise(selection: pd.DataFrame, groups: list[str]) -> pd.DataFrame:
             mean_regret=("regret", "mean"),
             std_regret=("regret", "std"),
             selection_error_rate=("selection_error", "mean"),
-            mean_selected_test_accuracy=("selected_test_accuracy", "mean"),
-            mean_oracle_test_accuracy=("oracle_test_accuracy", "mean"),
+            mean_selected_test_balanced_accuracy=("selected_test_balanced_accuracy", "mean"),
+            mean_oracle_test_balanced_accuracy=("oracle_test_balanced_accuracy", "mean"),
         )
         .round(6)
     )

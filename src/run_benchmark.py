@@ -6,10 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
+from sklearn.metrics import balanced_accuracy_score, f1_score
 
 from src.classifiers import make_classifier
 from src.datasets import load_ucr_with_validation
-from src.evaluation import metrics, selection_summary
+from src.evaluation import selection_summary
 from src.imputation import impute
 from src.masking import apply_mask
 
@@ -22,15 +23,18 @@ def run_config(config: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
             X_train, y_train, X_val, y_val, X_test, y_test = load_ucr_with_validation(
                 dataset, config["validation_size"], seed
             )
-            rates = config.get("missing_rates", [config["missing_rate"]])
+            rates = config.get("missing_rates")
+            if rates is None:
+                rates = [config["missing_rate"]]
             for missing_rate in rates:
                 for source_pattern in config["source_patterns"]:
-                    X_train_masked, train_mask = apply_mask(X_train, source_pattern, missing_rate, seed)
+                    # Training data stays complete. Source missingness is a validation-only
+                    # selection condition, while target missingness is deployment-only.
                     X_val_masked, val_mask = apply_mask(X_val, source_pattern, missing_rate, seed + 1)
                     for target_pattern in config["target_patterns"]:
                         X_test_masked, test_mask = apply_mask(X_test, target_pattern, missing_rate, seed + 2)
                         for imputer_name in config["imputers"]:
-                            X_train_ready = impute(X_train_masked, train_mask, imputer_name)
+                            X_train_ready = X_train
                             X_val_ready = impute(X_val_masked, val_mask, imputer_name)
                             X_test_ready = impute(X_test_masked, test_mask, imputer_name)
                             experiment_rows = []
@@ -43,14 +47,32 @@ def run_config(config: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
                                 val_pred = classifier.predict(X_val_ready)
                                 test_pred = classifier.predict(X_test_ready)
                                 predict_seconds = time.perf_counter() - started
-                                val = metrics(y_val, val_pred)
-                                test = metrics(y_test, test_pred)
+                                # These are intentionally calculated here so the benchmark
+                                # makes its selection metric explicit and auditable.
+                                val_balanced_accuracy = float(
+                                    balanced_accuracy_score(y_val, val_pred)
+                                )
+                                test_balanced_accuracy = float(
+                                    balanced_accuracy_score(y_test, test_pred)
+                                )
+                                val_macro_f1 = float(
+                                    f1_score(y_val, val_pred, average="macro", zero_division=0)
+                                )
+                                test_macro_f1 = float(
+                                    f1_score(y_test, test_pred, average="macro", zero_division=0)
+                                )
                                 row = {
-                                    "dataset": dataset, "seed": seed, "missing_rate": missing_rate,
-                                    "source_pattern": source_pattern, "target_pattern": target_pattern,
-                                    "imputer": imputer_name, "classifier": classifier_name,
-                                    "val_accuracy": val["accuracy"], "val_macro_f1": val["macro_f1"],
-                                    "test_accuracy": test["accuracy"], "test_macro_f1": test["macro_f1"],
+                                    "dataset": dataset,
+                                    "seed": seed,
+                                    "missing_rate": missing_rate,
+                                    "source_pattern": source_pattern,
+                                    "target_pattern": target_pattern,
+                                    "imputer": imputer_name,
+                                    "classifier": classifier_name,
+                                    "val_balanced_accuracy": val_balanced_accuracy,
+                                    "val_macro_f1": val_macro_f1,
+                                    "test_balanced_accuracy": test_balanced_accuracy,
+                                    "test_macro_f1": test_macro_f1,
                                     "fit_time_seconds": fit_seconds, "predict_time_seconds": predict_seconds,
                                 }
                                 raw_rows.append(row)

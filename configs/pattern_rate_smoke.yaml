@@ -1,4 +1,4 @@
-# Validate the two new temporal patterns and three missingness rates.
+# Exploratory robustness smoke test; prefix/suffix are outside the main 2 x 2 study.
 datasets: [GunPoint, ECG200, ItalyPowerDemand]
 seeds: [1]
 missing_rate: 0.2
@@ -6,9 +6,9 @@ missing_rates: [0.1, 0.2, 0.3]
 source_patterns: [point, block, prefix, suffix]
 target_patterns: [point, block, prefix, suffix]
 imputers: [linear]
-classifiers: [dtw, tsf, minirocket]
+classifiers: [dtw, minirocket, stat_rf]
 validation_size: 0.25
 classifier_params:
-  tsf_n_estimators: 100
+  stat_rf_n_estimators: 100
   minirocket_n_kernels: 5000
 results_dir: results/pattern_rate_smoke

@@ -10,13 +10,19 @@ This repository contains a reproducible benchmark for testing whether a mismatch
 
 ## Implemented benchmark
 
-- UCR datasets are loaded through aeon. Official train is split into stratified train and validation data; official test is reserved for simulated deployment.
-- Missingness mechanisms: point, block, prefix, and suffix.
-- Imputers: zero, mean, and linear interpolation.
-- Classifiers: 1NN-DTW, Time Series Forest, and MiniROCKET.
-- Selection uses validation accuracy only. The test set is used only to measure deployment accuracy, identify the post-hoc oracle, and calculate selection regret.
+- UCR datasets are loaded through aeon. Official train is split into stratified train and validation data; official train remains complete, source missingness is applied only to validation, and official test receives target missingness for simulated deployment.
+- **Main experiment only:** point and block missingness, forming the pre-specified 2 x 2 source/target matrix (PP, PB, BP, BB).
+- **Main experiment only:** linear interpolation.
+- **Main classifiers:** 1NN-DTW, MiniROCKET + Ridge linear classifier, and fixed statistical features + Random Forest.
+- Prefix/suffix missingness and zero/mean imputation are supported only for a future, separately labelled exploratory robustness analysis.
+- Selection uses validation balanced accuracy only. The test set is used only to measure deployment balanced accuracy, identify the post-hoc oracle, and calculate selection regret.
 
-`selection regret = oracle test accuracy - selected model test accuracy`
+`selection regret = oracle test balanced accuracy - selected model test balanced accuracy`
+
+The raw result file uses the explicit fields `val_balanced_accuracy` and
+`test_balanced_accuracy`. The selection result file uses
+`selected_test_balanced_accuracy` and `oracle_test_balanced_accuracy`.
+Ordinary accuracy is not calculated or written by the benchmark.
 
 ## Quick start
 
@@ -34,8 +40,10 @@ The smoke outputs are written to `results/raw_results.csv` and `results/selectio
 - `configs/smoke.yaml`: one small GunPoint check.
 - `configs/pilot.yaml`: single GunPoint pilot with complete classifier settings.
 - `configs/rate_expanded.yaml`: 3 datasets, 5 seeds, point/block patterns, and 10%, 20%, and 30% missingness.
-- `configs/multidataset_imputers.yaml`: compares zero, mean, and linear imputation.
-- `configs/pattern_rate_smoke.yaml`: validates prefix/suffix and multi-rate support before a larger run.
+- `configs/multidataset_imputers.yaml`: exploratory imputation robustness comparison; not part of the main result.
+- `configs/pattern_rate_smoke.yaml` and `configs/pattern_expanded.yaml`: exploratory prefix/suffix robustness checks; not part of the main result.
+- `configs/main_protocol_balanced.yaml`: main 2 x 2, linear-imputation study across six missingness rates, using balanced-accuracy selection.
+- `configs/rate_expanded_six_rates_balanced.yaml`: superseded historical configuration; its old TSF results are not formal protocol results.
 
 Generate summaries or the rate report with:
 
