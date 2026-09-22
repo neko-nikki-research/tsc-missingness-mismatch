@@ -1,0 +1,7 @@
+aeon>=1.5,<1.7
+numpy>=1.26,<3
+pandas>=2.2,<3
+scikit-learn>=1.5,<2
+matplotlib>=3.8,<4
+PyYAML>=6.0,<7
+pytest>=8,<9

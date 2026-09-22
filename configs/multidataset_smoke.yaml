@@ -1,0 +1,13 @@
+# Compatibility check before the full multi-dataset study.
+datasets: [GunPoint, ECG200, ItalyPowerDemand]
+seeds: [1]
+missing_rate: 0.2
+source_patterns: [point, block]
+target_patterns: [point, block]
+imputers: [linear]
+classifiers: [dtw, tsf, minirocket]
+validation_size: 0.25
+classifier_params:
+  tsf_n_estimators: 100
+  minirocket_n_kernels: 5000
+results_dir: results/multidataset_smoke

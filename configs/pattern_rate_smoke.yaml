@@ -1,0 +1,14 @@
+# Validate the two new temporal patterns and three missingness rates.
+datasets: [GunPoint, ECG200, ItalyPowerDemand]
+seeds: [1]
+missing_rate: 0.2
+missing_rates: [0.1, 0.2, 0.3]
+source_patterns: [point, block, prefix, suffix]
+target_patterns: [point, block, prefix, suffix]
+imputers: [linear]
+classifiers: [dtw, tsf, minirocket]
+validation_size: 0.25
+classifier_params:
+  tsf_n_estimators: 100
+  minirocket_n_kernels: 5000
+results_dir: results/pattern_rate_smoke
