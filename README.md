@@ -75,6 +75,9 @@ separately and must not be pooled with the main PP/PB/BP/BB conclusions.
 - A fixed seed gives the same mask, and masking never mutates its input.
 - All candidate classifiers in an experimental cell see identical validation
   and test masks.
+- Exact validation balanced-accuracy ties are resolved by a reproducible,
+  uniform random draw that never uses test outcomes; test-oracle ties are
+  reported rather than treated as arbitrary classifier identities.
 - Imputation only uses observed values from the same series; no test-set
   parameters are learned.
 - The official UCR test set is never used for selection or tuning.

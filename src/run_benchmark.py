@@ -6,11 +6,10 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
-from sklearn.metrics import balanced_accuracy_score, f1_score
 
 from src.classifiers import make_classifier
 from src.datasets import load_ucr_with_validation
-from src.evaluation import selection_summary
+from src.evaluation import calculate_classification_metrics, selection_summary
 from src.imputation import impute
 from src.masking import apply_mask
 
@@ -47,20 +46,8 @@ def run_config(config: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
                                 val_pred = classifier.predict(X_val_ready)
                                 test_pred = classifier.predict(X_test_ready)
                                 predict_seconds = time.perf_counter() - started
-                                # These are intentionally calculated here so the benchmark
-                                # makes its selection metric explicit and auditable.
-                                val_balanced_accuracy = float(
-                                    balanced_accuracy_score(y_val, val_pred)
-                                )
-                                test_balanced_accuracy = float(
-                                    balanced_accuracy_score(y_test, test_pred)
-                                )
-                                val_macro_f1 = float(
-                                    f1_score(y_val, val_pred, average="macro", zero_division=0)
-                                )
-                                test_macro_f1 = float(
-                                    f1_score(y_test, test_pred, average="macro", zero_division=0)
-                                )
+                                val_metrics = calculate_classification_metrics(y_val, val_pred)
+                                test_metrics = calculate_classification_metrics(y_test, test_pred)
                                 row = {
                                     "dataset": dataset,
                                     "seed": seed,
@@ -69,10 +56,10 @@ def run_config(config: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
                                     "target_pattern": target_pattern,
                                     "imputer": imputer_name,
                                     "classifier": classifier_name,
-                                    "val_balanced_accuracy": val_balanced_accuracy,
-                                    "val_macro_f1": val_macro_f1,
-                                    "test_balanced_accuracy": test_balanced_accuracy,
-                                    "test_macro_f1": test_macro_f1,
+                                    "val_balanced_accuracy": val_metrics["balanced_accuracy"],
+                                    "val_macro_f1": val_metrics["macro_f1"],
+                                    "test_balanced_accuracy": test_metrics["balanced_accuracy"],
+                                    "test_macro_f1": test_metrics["macro_f1"],
                                     "fit_time_seconds": fit_seconds, "predict_time_seconds": predict_seconds,
                                 }
                                 raw_rows.append(row)

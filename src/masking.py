@@ -28,6 +28,8 @@ def apply_mask(X: np.ndarray, pattern: str, rate: float, seed: int):
                     locations = rng.choice(n_timepoints, size=n_missing, replace=False)
                     mask[sample, channel, locations] = True
                 elif pattern == "block":
+                    # Each series independently receives a uniformly random
+                    # start position; block length stays fixed by the rate.
                     start = rng.integers(0, n_timepoints - n_missing + 1)
                     mask[sample, channel, start : start + n_missing] = True
                 elif pattern == "prefix":

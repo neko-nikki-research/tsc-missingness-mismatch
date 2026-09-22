@@ -24,6 +24,13 @@ def test_block_mask_is_contiguous_and_has_floor_count():
         assert np.all(np.diff(np.flatnonzero(series_mask)) == 1)
 
 
+def test_block_mask_uses_independent_random_start_positions():
+    X = np.zeros((20, 1, 20))
+    _, mask = apply_mask(X, "block", 0.2, seed=11)
+    starts = [np.flatnonzero(series_mask)[0] for series_mask in mask.reshape(-1, 20)]
+    assert len(set(starts)) > 1
+
+
 def test_prefix_and_suffix_masks_are_at_the_expected_endpoints():
     X = np.zeros((1, 1, 10))
     _, prefix = apply_mask(X, "prefix", 0.3, seed=1)
