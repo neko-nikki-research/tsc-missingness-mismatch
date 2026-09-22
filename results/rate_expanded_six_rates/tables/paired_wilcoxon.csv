@@ -1,0 +1,2 @@
+n_pairs,mean_matched_regret,mean_mismatched_regret,mean_difference_mismatch_minus_matched,wilcoxon_statistic,one_sided_p_value,alternative
+180,0.011132,0.016532,0.005401,7005.5,0.255271,mismatched regret > matched regret

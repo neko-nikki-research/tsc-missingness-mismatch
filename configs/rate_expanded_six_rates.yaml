@@ -1,0 +1,14 @@
+# Formal missing-rate study with six evenly spaced levels from 5% to 30%.
+datasets: [GunPoint, ECG200, ItalyPowerDemand]
+seeds: [1, 2, 3, 4, 5]
+missing_rate: 0.2
+missing_rates: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
+source_patterns: [point, block]
+target_patterns: [point, block]
+imputers: [linear]
+classifiers: [dtw, tsf, minirocket]
+validation_size: 0.25
+classifier_params:
+  tsf_n_estimators: 200
+  minirocket_n_kernels: 10000
+results_dir: results/rate_expanded_six_rates
