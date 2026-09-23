@@ -5,7 +5,7 @@
 **English title:**
 **The Effect of Missingness-Pattern Mismatch on Method Selection for Time-Series Classification: A Controlled Empirical Study**
 
-**Protocol version:** v1.1
+**Protocol version:** v1.2
 **Project status:** Development / Protocol updated
 **Project type:** Controlled empirical study
 **Primary task:** Univariate time-series classification
@@ -40,6 +40,31 @@
 * 监督式时间序列分类（time-series classification）；
 * 公开可获得的数据集；
 * 以 UCR/UEA 风格数据集为主要数据来源。
+
+### 2.1 主实验数据集
+
+主实验固定使用 aeon 所列 UCR2015 archive 中的 64 个单变量、等长数据集：
+
+`Adiac`, `ArrowHead`, `Beef`, `BeetleFly`, `BirdChicken`, `Car`, `CBF`,
+`Coffee`, `Computers`, `CricketX`, `CricketY`, `CricketZ`,
+`DiatomSizeReduction`, `DistalPhalanxOutlineCorrect`,
+`DistalPhalanxOutlineAgeGroup`, `DistalPhalanxTW`, `Earthquakes`, `ECG200`,
+`ECG5000`, `ECGFiveDays`, `FaceFour`, `FiftyWords`, `Fish`, `GunPoint`,
+`Ham`, `Haptics`, `Herring`, `InsectWingbeatSound`, `ItalyPowerDemand`,
+`LargeKitchenAppliances`, `Lightning2`, `Lightning7`, `Meat`,
+`MedicalImages`, `MiddlePhalanxOutlineCorrect`,
+`MiddlePhalanxOutlineAgeGroup`, `MiddlePhalanxTW`, `MoteStrain`, `OliveOil`,
+`OSULeaf`, `PhalangesOutlinesCorrect`, `Plane`,
+`ProximalPhalanxOutlineCorrect`, `ProximalPhalanxOutlineAgeGroup`,
+`ProximalPhalanxTW`, `RefrigerationDevices`, `ScreenType`, `ShapeletSim`,
+`ShapesAll`, `SmallKitchenAppliances`, `SonyAIBORobotSurface1`,
+`SonyAIBORobotSurface2`, `Strawberry`, `SwedishLeaf`, `Symbols`,
+`SyntheticControl`, `ToeSegmentation1`, `ToeSegmentation2`, `Trace`,
+`TwoLeadECG`, `Wine`, `WordSynonyms`, `Worms`, `WormsTwoClass`.
+
+该清单在运行任何结果分析前固定。为使 1NN-DTW 在本地可执行，UCR2015 中
+21 个样本量与序列长度组合特别大的数据集被基于计算资源预先排除；排除不参考
+分类性能、缺失模式或实验结果。
 
 每个样本表示为：
 

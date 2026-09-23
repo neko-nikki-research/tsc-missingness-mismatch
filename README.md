@@ -9,7 +9,7 @@ classifier selection and deployment performance.
 | Component | Fixed main-experiment choice |
 | --- | --- |
 | Data | UCR univariate, equal-length, originally complete series |
-| Datasets | GunPoint, ECG200, ItalyPowerDemand |
+| Datasets | 64 fixed UCR2015 univariate, equal-length datasets (listed in `PROTOCOL.md`) |
 | Train split | Official UCR train; kept complete and unchanged |
 | Validation split | Stratified split from official train; receives the source mask |
 | Deployment split | Official UCR test; receives the target mask |
