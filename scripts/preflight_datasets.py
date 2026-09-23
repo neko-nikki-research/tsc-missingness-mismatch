@@ -20,9 +20,17 @@ def main() -> None:
 
     datasets = config["datasets"]
     print(f"Preflight: {len(datasets)} datasets")
+    failures = []
     for index, dataset in enumerate(datasets, start=1):
-        load_ucr_with_validation(dataset, config["validation_size"], config["seeds"][0])
-        print(f"[{index}/{len(datasets)}] OK {dataset}", flush=True)
+        try:
+            load_ucr_with_validation(dataset, config["validation_size"], config["seeds"][0])
+        except Exception as error:  # Keep checking so the fixed list is fully audited.
+            failures.append(dataset)
+            print(f"[{index}/{len(datasets)}] FAIL {dataset}: {error}", flush=True)
+        else:
+            print(f"[{index}/{len(datasets)}] OK {dataset}", flush=True)
+    if failures:
+        raise SystemExit(f"PREFLIGHT FAILED: {', '.join(failures)}")
     print("PREFLIGHT PASSED", flush=True)
 
 

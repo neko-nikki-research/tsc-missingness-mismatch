@@ -49,3 +49,33 @@ def test_source_mask_is_validation_only_and_training_stays_complete(monkeypatch)
     assert np.array_equal(mask_inputs[0], X_val)
     assert np.array_equal(mask_inputs[1], X_test)
     assert np.array_equal(fitted[0].train_X, X_train)
+
+
+def test_checkpoint_resume_skips_a_completed_dataset(monkeypatch, tmp_path):
+    X = np.full((2, 1, 4), 1.0)
+    y = np.array(["a", "b"])
+    calls = []
+
+    def fake_load(*args):
+        calls.append(args[0])
+        return X, y, X, y, X, y
+
+    monkeypatch.setattr(benchmark, "load_ucr_with_validation", fake_load)
+    monkeypatch.setattr(
+        benchmark,
+        "apply_mask",
+        lambda X, *args: (X.copy(), np.zeros_like(X, dtype=bool)),
+    )
+    monkeypatch.setattr(benchmark, "make_classifier", lambda *args: _PerfectClassifier())
+    config = {
+        "datasets": ["Demo"], "seeds": [1], "missing_rate": 0.2,
+        "source_patterns": ["point"], "target_patterns": ["block"],
+        "imputers": ["linear"], "classifiers": ["dtw"], "validation_size": 0.25,
+    }
+
+    first_raw, first_selection = benchmark.run_config(config, checkpoint_dir=tmp_path)
+    second_raw, second_selection = benchmark.run_config(config, checkpoint_dir=tmp_path)
+
+    assert calls == ["Demo"]
+    assert len(first_raw) == len(second_raw) == 1
+    assert len(first_selection) == len(second_selection) == 1
