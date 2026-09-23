@@ -79,3 +79,41 @@ def test_checkpoint_resume_skips_a_completed_dataset(monkeypatch, tmp_path):
     assert calls == ["Demo"]
     assert len(first_raw) == len(second_raw) == 1
     assert len(first_selection) == len(second_selection) == 1
+
+
+def test_test_predictions_are_reused_across_source_patterns(monkeypatch):
+    X_train = np.full((2, 1, 4), 10.0)
+    X_val = np.full((2, 1, 4), 20.0)
+    X_test = np.full((2, 1, 4), 30.0)
+    y = np.array(["a", "b"])
+    predictions = []
+
+    class CountingClassifier(_PerfectClassifier):
+        def predict(self, X):
+            predictions.append(float(X[0, 0, 0]))
+            return super().predict(X)
+
+    monkeypatch.setattr(
+        benchmark,
+        "load_ucr_with_validation",
+        lambda *args: (X_train, y, X_val, y, X_test, y),
+    )
+    def fake_mask(X, pattern, *args):
+        masked = X.copy()
+        if X is X_val:
+            masked[:, :, 0] += 1 if pattern == "point" else 2
+        return masked, np.zeros_like(X, dtype=bool)
+
+    monkeypatch.setattr(benchmark, "apply_mask", fake_mask)
+    monkeypatch.setattr(benchmark, "make_classifier", lambda *args: CountingClassifier())
+    config = {
+        "datasets": ["Demo"], "seeds": [1], "missing_rate": 0.2,
+        "source_patterns": ["point", "block"], "target_patterns": ["point", "block"],
+        "imputers": ["linear"], "classifiers": ["dtw"], "validation_size": 0.25,
+    }
+
+    raw, selection = benchmark.run_config(config)
+
+    assert predictions == [21.0, 30.0, 30.0, 22.0]
+    assert len(raw) == len(selection) == 4
+    assert raw["test_balanced_accuracy"].nunique() == 1

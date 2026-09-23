@@ -39,9 +39,16 @@ Run the full protocol study with:
 
 ```powershell
 python -m src.run_benchmark --config configs\main_protocol_balanced.yaml
-python -m src.analyze_results --results-dir results\main_protocol_balanced
-python -m src.report_results --results-dir results\main_protocol_balanced
+python -m src.analyze_results --results-dir results\main_protocol_ucr64_v1_4
+python -m src.report_results --results-dir results\main_protocol_ucr64_v1_4
 ```
+
+The runner saves both result CSVs after each complete dataset. Rerunning the
+same command resumes from that checkpoint. Within one dataset, validation
+predictions are reused across target patterns and test predictions are reused
+across source patterns. `predict_time_seconds` estimates one validation plus
+one test prediction for each condition, including conditions served from the
+cache; it is not the total wall time spent by the optimized runner.
 
 The raw output uses only explicit metric names: `val_balanced_accuracy`,
 `test_balanced_accuracy`, `selected_test_balanced_accuracy`, and

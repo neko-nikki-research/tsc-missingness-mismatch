@@ -138,10 +138,15 @@ def run_config(
                 n_timepoints = X_train.shape[-1]
                 n_missing_per_series = math.floor(missing_rate * n_timepoints)
                 realized_missing_rate = n_missing_per_series / n_timepoints
+                # The test mask and fitted model do not depend on the source
+                # pattern. Reuse deployment predictions across source patterns.
+                test_results = {}
                 for source_pattern in config["source_patterns"]:
                     # Training data stays complete. Source missingness is a validation-only
                     # selection condition, while target missingness is deployment-only.
                     X_val_masked, val_mask = apply_mask(X_val, source_pattern, missing_rate, seed + 1)
+                    # Validation predictions do not depend on the target pattern.
+                    validation_results = {}
                     for target_pattern in config["target_patterns"]:
                         X_test_masked, test_mask = apply_mask(X_test, target_pattern, missing_rate, seed + 2)
                         for imputer_name in config["imputers"]:
@@ -154,12 +159,27 @@ def run_config(
                                 started = time.perf_counter()
                                 classifier.fit(X_train_ready, y_train)
                                 fit_seconds = time.perf_counter() - started
-                                started = time.perf_counter()
-                                val_pred = classifier.predict(X_val_ready)
-                                test_pred = classifier.predict(X_test_ready)
-                                predict_seconds = time.perf_counter() - started
-                                val_metrics = calculate_classification_metrics(y_val, val_pred)
-                                test_metrics = calculate_classification_metrics(y_test, test_pred)
+                                validation_key = (imputer_name, classifier_name)
+                                if validation_key not in validation_results:
+                                    started = time.perf_counter()
+                                    val_pred = classifier.predict(X_val_ready)
+                                    val_predict_seconds = time.perf_counter() - started
+                                    val_metrics = calculate_classification_metrics(y_val, val_pred)
+                                    validation_results[validation_key] = (
+                                        val_metrics, val_predict_seconds
+                                    )
+                                val_metrics, val_predict_seconds = validation_results[validation_key]
+                                test_key = (target_pattern, imputer_name, classifier_name)
+                                if test_key not in test_results:
+                                    started = time.perf_counter()
+                                    test_pred = classifier.predict(X_test_ready)
+                                    test_predict_seconds = time.perf_counter() - started
+                                    test_metrics = calculate_classification_metrics(y_test, test_pred)
+                                    test_results[test_key] = (test_metrics, test_predict_seconds)
+                                test_metrics, test_predict_seconds = test_results[test_key]
+                                # Report the cost of one validation and one test prediction
+                                # for every condition, including cached conditions.
+                                predict_seconds = val_predict_seconds + test_predict_seconds
                                 row = {
                                     "dataset": dataset,
                                     "seed": seed,

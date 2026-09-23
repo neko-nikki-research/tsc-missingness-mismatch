@@ -37,11 +37,14 @@ class StatisticalFeaturesRandomForestClassifier(BaseEstimator, ClassifierMixin):
 
 def make_classifier(name: str, seed: int, params: dict):
     """Create one classifier; hyperparameters are fixed before test evaluation."""
+    n_jobs = int(params.get("n_jobs", 1))
+    if n_jobs < 1:
+        raise ValueError("classifier_params.n_jobs must be at least 1.")
     if name == "dtw":
-        return KNeighborsTimeSeriesClassifier(n_neighbors=1, distance="dtw", n_jobs=1)
+        return KNeighborsTimeSeriesClassifier(n_neighbors=1, distance="dtw", n_jobs=n_jobs)
     if name == "stat_rf":
         return StatisticalFeaturesRandomForestClassifier(
-            n_estimators=int(params.get("stat_rf_n_estimators", 500)), random_state=seed, n_jobs=1
+            n_estimators=int(params.get("stat_rf_n_estimators", 500)), random_state=seed, n_jobs=n_jobs
         )
     if name == "minirocket":
         return MiniRocketClassifier(
@@ -49,6 +52,6 @@ def make_classifier(name: str, seed: int, params: dict):
             # aeon applies its built-in sparse scaling before this linear head.
             estimator=RidgeClassifierCV(alphas=np.logspace(-3, 3, 10)),
             random_state=seed,
-            n_jobs=1,
+            n_jobs=n_jobs,
         )
     raise ValueError(f"Unknown classifier: {name}")

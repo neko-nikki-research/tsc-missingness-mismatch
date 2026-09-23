@@ -8,6 +8,10 @@ data/
 results/**/*.csv
 results/**/figures/
 results/**/tables/
+results/**/run_manifest.json
+results/**/benchmark_pid.txt
+results/**/switch_watcher_pid.txt
+results/**/switch_status.txt
 results/raw/
 .report_render/
 preliminary_experiment_report.docx
