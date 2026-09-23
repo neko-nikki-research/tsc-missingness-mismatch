@@ -5,7 +5,7 @@
 **English title:**
 **The Effect of Missingness-Pattern Mismatch on Method Selection for Time-Series Classification: A Controlled Empirical Study**
 
-**Protocol version:** v1.3
+**Protocol version:** v1.4
 **Project status:** Development / Protocol updated
 **Project type:** Controlled empirical study
 **Primary task:** Univariate time-series classification
@@ -46,17 +46,17 @@
 主实验固定使用 aeon 所列 UCR2015 archive 中的 64 个单变量、等长数据集：
 
 `Adiac`, `ArrowHead`, `Beef`, `BeetleFly`, `BirdChicken`, `Car`, `CBF`,
-`Coffee`, `Computers`, `CricketX`, `CricketY`, `FaceAll`,
-`FacesUCR`, `DistalPhalanxOutlineCorrect`,
+`Coffee`, `Computers`, `CricketX`, `CricketY`, `CricketZ`, `FaceAll`,
+`DistalPhalanxOutlineCorrect`,
 `DistalPhalanxOutlineAgeGroup`, `DistalPhalanxTW`, `Earthquakes`, `ECG200`,
-`ECG5000`, `ECGFiveDays`, `FaceFour`, `FiftyWords`, `Fish`, `GunPoint`,
-`Ham`, `Haptics`, `Herring`, `InsectWingbeatSound`, `ItalyPowerDemand`,
+`ECG5000`, `ECGFiveDays`, `FaceFour`, `FacesUCR`, `Fish`, `GunPoint`,
+`Ham`, `Haptics`, `CinCECGTorso`, `InsectWingbeatSound`, `ItalyPowerDemand`,
 `LargeKitchenAppliances`, `Lightning2`, `Lightning7`, `Meat`,
 `MedicalImages`, `MiddlePhalanxOutlineCorrect`,
 `MiddlePhalanxOutlineAgeGroup`, `MiddlePhalanxTW`, `MoteStrain`, `OliveOil`,
 `OSULeaf`, `PhalangesOutlinesCorrect`, `Plane`,
 `ProximalPhalanxOutlineCorrect`, `ProximalPhalanxOutlineAgeGroup`,
-`ProximalPhalanxTW`, `RefrigerationDevices`, `ScreenType`, `ShapeletSim`,
+`Mallat`, `RefrigerationDevices`, `ScreenType`, `ShapeletSim`,
 `ShapesAll`, `SmallKitchenAppliances`, `SonyAIBORobotSurface1`,
 `SonyAIBORobotSurface2`, `Strawberry`, `SwedishLeaf`, `Symbols`,
 `SyntheticControl`, `ToeSegmentation1`, `ToeSegmentation2`, `Trace`,
@@ -66,16 +66,17 @@
 21 个样本量与序列长度组合特别大的数据集被基于计算资源预先排除；排除不参考
 分类性能、缺失模式或实验结果。
 
-在运行正式结果前的加载预检中，aeon 1.6.0 无法读取 `CricketZ` 的官方测试文件，
-并在第 383 条序列报出维度不一致错误；文件的 390 条记录均为长度 300，说明不是
-本项目制造缺失或插补造成的问题。为使固定的 64 数据集设计可以完整复现，`CricketZ`
-在 v1.3 中被同属 UCR2015、单变量、等长的 `FaceAll` 替换。该替换发生在本批
-64 数据集任何正式结果产生之前，不参考任何分类性能。
+在运行正式结果前的加载预检中，发现 7 个 aeon 本地缓存文件在最后一条序列处被截断，
+导致 aeon 报出维度不一致或错误的类别计数。这些目录被逐个删除并由 aeon 重新下载
+官方数据；`CricketZ`、`MiddlePhalanxOutlineAgeGroup` 和 `MiddlePhalanxTW` 在
+修复后通过完整加载与分层划分预检。
 
-同样在正式结果产生前的分层划分预检中，`DiatomSizeReduction` 的官方训练集有一个
-类别只含 1 条序列，因而无法满足本研究固定的 stratified train/validation split。
-v1.3 使用同属 UCR2015、单变量、等长且已通过该预检的 `FacesUCR` 替换它；该决定
-不参考任何分类性能、缺失模式或实验结果。
+重新下载后，`DiatomSizeReduction` 与 `FiftyWords` 的官方训练数据仍各有一个类别
+只有 1 条序列，不能执行本研究固定的 stratified train/validation split；`Herring`
+和 `ProximalPhalanxTW` 仍无法被 aeon 1.6.0 读取。为保留预先规定的 64 个数据集
+规模，v1.4 在正式结果产生前以同属 UCR2015、单变量、等长并通过加载与分层预检的
+`FaceAll`、`FacesUCR`、`CinCECGTorso`、`Mallat` 分别替换它们。所有替换均不参考
+任何分类性能、缺失模式或实验结果。
 
 每个样本表示为：
 
