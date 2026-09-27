@@ -1,10 +1,13 @@
 # Generated experiment outputs
 
 The live benchmark CSVs, tables, and figures are generated locally and ignored
-by Git. The frozen `interim_ucr64_2026-09-25_27datasets/` checkpoint is an
-intentional, versioned exception: its CSVs, manifest, aggregate tables, and
-Matplotlib figures are committed so the current PR can be reviewed before all
-64 datasets finish. It is **not** the final study result.
+by Git. Frozen interim checkpoints are intentional, versioned exceptions:
+their CSVs, run manifest, aggregate tables, and Matplotlib figures are
+committed so the PR can be reviewed before all 64 datasets finish. They are
+**not** final study results.
+
+- `interim_ucr64_2026-09-25_27datasets/`: checkpoint after 27/64 datasets.
+- `interim_ucr64_2026-09-27_46datasets/`: checkpoint after 46/64 datasets.
 
 For the formal study, run:
 
