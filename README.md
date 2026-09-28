@@ -39,7 +39,8 @@ Run the full protocol study with:
 
 ```powershell
 python -m src.run_benchmark --config configs\main_protocol_balanced.yaml
-python -m src.paired_analysis --results-dir results\main_protocol_ucr64_v1_4 --config configs\main_protocol_balanced.yaml --output-dir results\analysis_ucr64_v1_4
+python -m src.paired_analysis --results-dir results\final_ucr64_v1_4 --config configs\main_protocol_balanced.yaml --output-dir results\final_ucr64_v1_4\analysis
+python -m src.plot_final_results --results-dir results\final_ucr64_v1_4 --config configs\main_protocol_balanced.yaml --figures-dir results\final_ucr64_v1_4\figures
 python -m src.analyze_results --results-dir results\main_protocol_ucr64_v1_4
 python -m src.report_results --results-dir results\main_protocol_ucr64_v1_4
 ```
@@ -48,7 +49,12 @@ python -m src.report_results --results-dir results\main_protocol_ucr64_v1_4
 section 10. It verifies both CSVs, recomputes selection and regret from the raw
 rows, and treats each dataset as one independent unit. It refuses to analyse an
 unfinished run unless `--allow-incomplete` is given, in which case the output is
-marked `INTERIM`. The other two commands produce descriptive summaries only.
+marked `INTERIM`. `src.plot_final_results` draws the four publication figures
+with bootstrap intervals over datasets. The last two commands produce
+descriptive summaries only.
+
+The completed main-study results, verification notes, analysis tables and
+figures are committed under `results/final_ucr64_v1_4/`.
 
 The runner saves both result CSVs after each complete dataset. Rerunning the
 same command resumes from that checkpoint. Within one dataset, validation

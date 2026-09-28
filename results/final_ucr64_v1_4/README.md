@@ -1,0 +1,60 @@
+# Final UCR64 results — protocol v1.4 main study
+
+Complete results of the main experiment in `PROTOCOL.md`, copied unchanged from
+the run directory `results/main_protocol_ucr64_v1_4/` after the benchmark
+finished on 2026-09-29 (last checkpoint 02:32:48 +0900).
+
+- Configuration: `configs/main_protocol_balanced.yaml`
+  (fingerprint `195e4df2bf6545b7df2d65f21feba2b0e1ae3f9080bb2d0640b4eab70b3c4789`,
+  matching `run_manifest.json`).
+- `raw_results.csv`: 23,040 rows = 64 datasets × 5 seeds × 6 rates × 4 pattern pairs × 3 classifiers.
+- `selection_results.csv`: 7,680 rows = 64 × 5 × 6 × 4.
+- Training stays unmasked; validation has the source pattern; the official UCR
+  test set has the target pattern. Linear interpolation is the only imputer.
+- Selection uses validation balanced accuracy only; test balanced accuracy is
+  used only for the post-hoc candidate-set oracle, selection error and regret.
+
+## Verification
+
+Before analysis the files were checked for: exact row counts; every configured
+dataset/seed/rate/pattern condition present exactly once; exactly the three
+configured classifiers per condition; no missing values; balanced accuracies in
+[0, 1]; `k = floor(rT)`; and selected classifier, oracle, selection error and
+regret recomputed from the raw rows with zero mismatches. Test results do not
+vary with the source pattern and validation results do not vary with the target
+pattern, as the design requires. 16.7% of conditions had a validation tie,
+broken by the validation-only deterministic rule.
+
+The first nine datasets (Adiac to Computers) were produced before prediction
+caching was added; their raw rows show the same determinism, so both code
+versions produce identical results.
+
+## Analysis (`analysis/`)
+
+Produced by `src.paired_analysis` following `PROTOCOL.md` section 10. Each
+dataset is one independent unit: seeds, rates and pattern strata are averaged
+within a dataset before bootstrap CIs (10,000 resamples over datasets) and
+two-sided Wilcoxon signed-rank tests across the 64 datasets.
+
+Headline (target-paired, positive = mismatch is worse):
+
+| Outcome | Mean | 95% CI | Worse / better / equal | Wilcoxon p |
+| --- | --- | --- | --- | --- |
+| Selected-model test BA lost (= regret increase) | 1.14 pp | 0.79 to 1.51 | 49 / 7 / 8 | 1.8e-9 |
+| Selection error increase | 6.4 pp | 3.7 to 9.4 | 28 / 8 / 28 | 1.7e-5 |
+
+The cost is asymmetric (point test, BP vs PP: 1.84 pp, p = 7.4e-7; block test,
+PB vs BB: 0.44 pp, p = 0.20) and grows with the missing rate (−0.03 pp at 5% to
+2.46 pp at 30%; slope 0.091 pp per percentage point, p = 6.4e-8).
+
+## Figures (`figures/`, PNG at 300 dpi and PDF)
+
+Produced by `src.plot_final_results`; all intervals are bootstrap CIs over datasets.
+
+1. `fig1_mismatch_cost_by_rate` — target-paired cost by missing rate.
+2. `fig2_conditions_by_rate` — regret and selection error for PP, PB, BP, BB.
+3. `fig3_per_dataset_effect` — dataset-level mean cost for all 64 datasets.
+4. `fig4_classifier_selection` — which classifier is selected vs. best on test.
+
+The supplementary linear-block analysis (`PROTOCOL.md` section 5) is not part of
+these results and will be reported separately.

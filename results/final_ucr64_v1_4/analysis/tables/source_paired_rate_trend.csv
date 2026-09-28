@@ -1,0 +1,5 @@
+metric,unit,n_datasets,mean,median,ci95_low,ci95_high,n_mismatch_worse,n_mismatch_better,n_no_difference,wilcoxon_statistic,wilcoxon_p_two_sided
+delta_regret,change per 1 percentage point,64,0.0009103769309774024,0.0004549708646057382,0.0006069207518790826,0.0012440399208909093,48,8,8,135.0,6.368015640645083e-08
+delta_selection_error,change per 1 percentage point,64,0.0038482142857142855,0.0,0.001749776785714285,0.0061249999999999985,28,12,24,153.5,0.0005649080186892954
+delta_selected_test_ba,change per 1 percentage point,64,0.0009103769309774027,0.00045497086460573864,0.0006069207518790826,0.0012440399208909095,48,8,8,135.0,6.368015640645083e-08
+delta_oracle_test_ba,change per 1 percentage point,64,0.0,0.0,0.0,0.0,0,0,64,,1.0
