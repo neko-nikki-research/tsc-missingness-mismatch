@@ -1,4 +1,9 @@
-"""Create figures, descriptive tables, and paired tests from selection results."""
+"""Create descriptive figures and tables from selection results.
+
+Inference (confidence intervals and tests) lives in ``src.paired_analysis``,
+which treats each dataset as one independent unit. The error bars here are
+across-run standard deviations and are descriptive only.
+"""
 
 import argparse
 from pathlib import Path
@@ -6,7 +11,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.stats import wilcoxon
 
 
 def add_condition(selection: pd.DataFrame) -> pd.DataFrame:
@@ -16,25 +20,6 @@ def add_condition(selection: pd.DataFrame) -> pd.DataFrame:
         axis=1,
     )
     return result
-
-
-def paired_wilcoxon(selection: pd.DataFrame) -> pd.DataFrame:
-    """Compare target mismatch against the same source-pattern matched run."""
-    keys = ["dataset", "seed", "missing_rate", "imputer", "source_pattern"]
-    matched = selection[selection.condition == "matched"].set_index(keys)["regret"]
-    mismatched = selection[selection.condition == "mismatched"].set_index(keys)["regret"]
-    paired = pd.concat({"matched": matched, "mismatched": mismatched}, axis=1).dropna()
-    difference = paired["mismatched"] - paired["matched"]
-    statistic, p_value = wilcoxon(difference, alternative="greater", zero_method="pratt")
-    return pd.DataFrame([{
-        "n_pairs": len(difference),
-        "mean_matched_regret": paired["matched"].mean(),
-        "mean_mismatched_regret": paired["mismatched"].mean(),
-        "mean_difference_mismatch_minus_matched": difference.mean(),
-        "wilcoxon_statistic": statistic,
-        "one_sided_p_value": p_value,
-        "alternative": "mismatched regret > matched regret",
-    }])
 
 
 def save_regret_by_rate(summary: pd.DataFrame, figures_dir: Path) -> None:
@@ -126,7 +111,6 @@ def main() -> None:
                     std_regret=("regret", "std"), selection_error_rate=("selection_error", "mean"))
                .round(6))
     summary.to_csv(tables_dir / "regret_by_rate_and_condition.csv", index=False)
-    paired_wilcoxon(selection).round(6).to_csv(tables_dir / "paired_wilcoxon.csv", index=False)
 
     plt.style.use("seaborn-v0_8-whitegrid")
     save_regret_by_rate(summary, figures_dir)

@@ -299,3 +299,59 @@ $$
 * 其他缺失数据恢复模型。
 
 为了控制研究规模，插补方法本身不作为主要研究变量。
+
+---
+
+## 10. 统计分析计划（草案，需在 64 个数据集全部完成前确认）
+
+### 10.1 独立单位
+
+数据集是唯一的独立单位。同一数据集内的 seed、缺失率和缺失模式组合都是重复测量，
+必须先在数据集内平均，再跨数据集做区间估计和检验；不得把展开后的行当作独立样本。
+
+### 10.2 两种配对
+
+符号约定：正值表示 mismatch 更差。
+
+* **Target-paired（主分析）**：固定 test pattern，只改变 validation pattern，
+  即 PP vs BP、BB vs PB。两者使用同一 test 数据和同一候选集合，因此 test oracle
+  相同，有
+
+  $$
+  \Delta BA = BA_{matched} - BA_{mismatched} = R_{mismatched} - R_{matched}.
+  $$
+
+  两者是同一个效应，不重复报告为两个独立结果。
+* **Source-paired（次要分析）**：固定 validation pattern，只改变 test pattern，
+  即 PP vs PB、BB vs BP。两者选中的模型相同，差值反映 deployment pattern 对 test
+  表现和 oracle 的影响，而不是选择改变。
+
+### 10.3 指标
+
+* 主要指标：target-paired 的 \(\Delta BA\)（selected model 的 test balanced accuracy 差）。
+* 次要指标：selection error 差、选择改变率；source-paired 的 regret、selection error、
+  selected BA 与 oracle BA 差；四种条件 PP/PB/BP/BB 的数据集层面描述；各分类器被选中
+  比例、test-oracle 比例（并列时平分）及被选中时与候选集合 oracle 的差距。
+
+### 10.4 推断
+
+* 每个数据集先得到一个平均差值（n = 64）。
+* 报告均值、中位数、按数据集重抽样的 percentile bootstrap 95% 置信区间
+  （10,000 次，固定随机种子）、双侧 Wilcoxon signed-rank 检验，以及 mismatch
+  更差 / 更好 / 无差异的数据集数量。
+* 六档缺失率分别检验，并在每个指标内做 Holm 校正；趋势用每个数据集的
+  "差值对缺失率（百分点）"最小二乘斜率，再跨数据集检验斜率。
+
+### 10.5 敏感性分析
+
+* 排除任一侧出现 validation 平票（随机打破）的配对后重复主分析。
+* 注明 validation 集较小、部分 seed 下 validation 缺少某一类别的数据集
+  （ECG5000、Mallat、WordSynonyms），以及 ItalyPowerDemand 在 5% 时 \(k=1\)，
+  此时 point 与 block 不可区分。
+
+### 10.6 补充实验与透明度
+
+* Linear block（第 5 节）使用同一分析流程，但单独成表，不与 circular-block 主实验合并。
+* 在 64 个数据集完成前曾查看 27 个和 46 个数据集的描述性中期结果；中期结果未做推断检验，
+  论文中如实说明。
+* 前 9 个数据集由加入预测缓存前的代码生成；已验证两版代码的 test/validation 结果逐条一致。
