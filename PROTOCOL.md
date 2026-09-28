@@ -5,7 +5,7 @@
 **English title:**
 **The Effect of Missingness-Pattern Mismatch on Method Selection for Time-Series Classification: A Controlled Empirical Study**
 
-**Protocol version:** v1.1
+**Protocol version:** v1.4
 **Project status:** Development / Protocol updated
 **Project type:** Controlled empirical study
 **Primary task:** Univariate time-series classification
@@ -40,6 +40,43 @@
 * 监督式时间序列分类（time-series classification）；
 * 公开可获得的数据集；
 * 以 UCR/UEA 风格数据集为主要数据来源。
+
+### 2.1 主实验数据集
+
+主实验固定使用 aeon 所列 UCR2015 archive 中的 64 个单变量、等长数据集：
+
+`Adiac`, `ArrowHead`, `Beef`, `BeetleFly`, `BirdChicken`, `Car`, `CBF`,
+`Coffee`, `Computers`, `CricketX`, `CricketY`, `CricketZ`, `FaceAll`,
+`DistalPhalanxOutlineCorrect`,
+`DistalPhalanxOutlineAgeGroup`, `DistalPhalanxTW`, `Earthquakes`, `ECG200`,
+`ECG5000`, `ECGFiveDays`, `FaceFour`, `FacesUCR`, `Fish`, `GunPoint`,
+`Ham`, `Haptics`, `CinCECGTorso`, `InsectWingbeatSound`, `ItalyPowerDemand`,
+`LargeKitchenAppliances`, `Lightning2`, `Lightning7`, `Meat`,
+`MedicalImages`, `MiddlePhalanxOutlineCorrect`,
+`MiddlePhalanxOutlineAgeGroup`, `MiddlePhalanxTW`, `MoteStrain`, `OliveOil`,
+`OSULeaf`, `PhalangesOutlinesCorrect`, `Plane`,
+`ProximalPhalanxOutlineCorrect`, `ProximalPhalanxOutlineAgeGroup`,
+`Mallat`, `RefrigerationDevices`, `ScreenType`, `ShapeletSim`,
+`ShapesAll`, `SmallKitchenAppliances`, `SonyAIBORobotSurface1`,
+`SonyAIBORobotSurface2`, `Strawberry`, `SwedishLeaf`, `Symbols`,
+`SyntheticControl`, `ToeSegmentation1`, `ToeSegmentation2`, `Trace`,
+`TwoLeadECG`, `Wine`, `WordSynonyms`, `Worms`, `WormsTwoClass`.
+
+该清单在运行任何结果分析前固定。为使 1NN-DTW 在本地可执行，UCR2015 中
+21 个样本量与序列长度组合特别大的数据集被基于计算资源预先排除；排除不参考
+分类性能、缺失模式或实验结果。
+
+在运行正式结果前的加载预检中，发现 7 个 aeon 本地缓存文件在最后一条序列处被截断，
+导致 aeon 报出维度不一致或错误的类别计数。这些目录被逐个删除并由 aeon 重新下载
+官方数据；`CricketZ`、`MiddlePhalanxOutlineAgeGroup` 和 `MiddlePhalanxTW` 在
+修复后通过完整加载与分层划分预检。
+
+重新下载后，`DiatomSizeReduction` 与 `FiftyWords` 的官方训练数据仍各有一个类别
+只有 1 条序列，不能执行本研究固定的 stratified train/validation split；`Herring`
+和 `ProximalPhalanxTW` 仍无法被 aeon 1.6.0 读取。为保留预先规定的 64 个数据集
+规模，v1.4 在正式结果产生前以同属 UCR2015、单变量、等长并通过加载与分层预检的
+`FaceAll`、`FacesUCR`、`CinCECGTorso`、`Mallat` 分别替换它们。所有替换均不参考
+任何分类性能、缺失模式或实验结果。
 
 每个样本表示为：
 
@@ -262,3 +299,59 @@ $$
 * 其他缺失数据恢复模型。
 
 为了控制研究规模，插补方法本身不作为主要研究变量。
+
+---
+
+## 10. 统计分析计划（草案，需在 64 个数据集全部完成前确认）
+
+### 10.1 独立单位
+
+数据集是唯一的独立单位。同一数据集内的 seed、缺失率和缺失模式组合都是重复测量，
+必须先在数据集内平均，再跨数据集做区间估计和检验；不得把展开后的行当作独立样本。
+
+### 10.2 两种配对
+
+符号约定：正值表示 mismatch 更差。
+
+* **Target-paired（主分析）**：固定 test pattern，只改变 validation pattern，
+  即 PP vs BP、BB vs PB。两者使用同一 test 数据和同一候选集合，因此 test oracle
+  相同，有
+
+  $$
+  \Delta BA = BA_{matched} - BA_{mismatched} = R_{mismatched} - R_{matched}.
+  $$
+
+  两者是同一个效应，不重复报告为两个独立结果。
+* **Source-paired（次要分析）**：固定 validation pattern，只改变 test pattern，
+  即 PP vs PB、BB vs BP。两者选中的模型相同，差值反映 deployment pattern 对 test
+  表现和 oracle 的影响，而不是选择改变。
+
+### 10.3 指标
+
+* 主要指标：target-paired 的 \(\Delta BA\)（selected model 的 test balanced accuracy 差）。
+* 次要指标：selection error 差、选择改变率；source-paired 的 regret、selection error、
+  selected BA 与 oracle BA 差；四种条件 PP/PB/BP/BB 的数据集层面描述；各分类器被选中
+  比例、test-oracle 比例（并列时平分）及被选中时与候选集合 oracle 的差距。
+
+### 10.4 推断
+
+* 每个数据集先得到一个平均差值（n = 64）。
+* 报告均值、中位数、按数据集重抽样的 percentile bootstrap 95% 置信区间
+  （10,000 次，固定随机种子）、双侧 Wilcoxon signed-rank 检验，以及 mismatch
+  更差 / 更好 / 无差异的数据集数量。
+* 六档缺失率分别检验，并在每个指标内做 Holm 校正；趋势用每个数据集的
+  "差值对缺失率（百分点）"最小二乘斜率，再跨数据集检验斜率。
+
+### 10.5 敏感性分析
+
+* 排除任一侧出现 validation 平票（随机打破）的配对后重复主分析。
+* 注明 validation 集较小、部分 seed 下 validation 缺少某一类别的数据集
+  （ECG5000、Mallat、WordSynonyms），以及 ItalyPowerDemand 在 5% 时 \(k=1\)，
+  此时 point 与 block 不可区分。
+
+### 10.6 补充实验与透明度
+
+* Linear block（第 5 节）使用同一分析流程，但单独成表，不与 circular-block 主实验合并。
+* 在 64 个数据集完成前曾查看 27 个和 46 个数据集的描述性中期结果；中期结果未做推断检验，
+  论文中如实说明。
+* 前 9 个数据集由加入预测缓存前的代码生成；已验证两版代码的 test/validation 结果逐条一致。

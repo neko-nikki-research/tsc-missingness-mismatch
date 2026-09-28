@@ -9,7 +9,7 @@ classifier selection and deployment performance.
 | Component | Fixed main-experiment choice |
 | --- | --- |
 | Data | UCR univariate, equal-length, originally complete series |
-| Datasets | GunPoint, ECG200, ItalyPowerDemand |
+| Datasets | 64 fixed UCR2015 univariate, equal-length datasets (listed in `PROTOCOL.md`) |
 | Train split | Official UCR train; kept complete and unchanged |
 | Validation split | Stratified split from official train; receives the source mask |
 | Deployment split | Official UCR test; receives the target mask |
@@ -39,9 +39,23 @@ Run the full protocol study with:
 
 ```powershell
 python -m src.run_benchmark --config configs\main_protocol_balanced.yaml
-python -m src.analyze_results --results-dir results\main_protocol_balanced
-python -m src.report_results --results-dir results\main_protocol_balanced
+python -m src.paired_analysis --results-dir results\main_protocol_ucr64_v1_4 --config configs\main_protocol_balanced.yaml --output-dir results\analysis_ucr64_v1_4
+python -m src.analyze_results --results-dir results\main_protocol_ucr64_v1_4
+python -m src.report_results --results-dir results\main_protocol_ucr64_v1_4
 ```
+
+`src.paired_analysis` is the confirmatory analysis described in `PROTOCOL.md`
+section 10. It verifies both CSVs, recomputes selection and regret from the raw
+rows, and treats each dataset as one independent unit. It refuses to analyse an
+unfinished run unless `--allow-incomplete` is given, in which case the output is
+marked `INTERIM`. The other two commands produce descriptive summaries only.
+
+The runner saves both result CSVs after each complete dataset. Rerunning the
+same command resumes from that checkpoint. Within one dataset, validation
+predictions are reused across target patterns and test predictions are reused
+across source patterns. `predict_time_seconds` estimates one validation plus
+one test prediction for each condition, including conditions served from the
+cache; it is not the total wall time spent by the optimized runner.
 
 The raw output uses only explicit metric names: `val_balanced_accuracy`,
 `test_balanced_accuracy`, `selected_test_balanced_accuracy`, and

@@ -1,6 +1,6 @@
-# Protocol v1.1 main study: the point/circular-block 2 x 2 matrix (PP, PB, BP, BB).
+# Protocol v1.4 main study: 64 UCR2015 datasets and circular point/block PP/PB/BP/BB.
 # Model selection and regret use balanced accuracy; test remains deployment-only.
-datasets: [GunPoint, ECG200, ItalyPowerDemand]
+datasets: [Adiac, ArrowHead, Beef, BeetleFly, BirdChicken, Car, CBF, Coffee, Computers, CricketX, CricketY, CricketZ, FaceAll, DistalPhalanxOutlineCorrect, DistalPhalanxOutlineAgeGroup, DistalPhalanxTW, Earthquakes, ECG200, ECG5000, ECGFiveDays, FaceFour, FacesUCR, Fish, GunPoint, Ham, Haptics, CinCECGTorso, InsectWingbeatSound, ItalyPowerDemand, LargeKitchenAppliances, Lightning2, Lightning7, Meat, MedicalImages, MiddlePhalanxOutlineCorrect, MiddlePhalanxOutlineAgeGroup, MiddlePhalanxTW, MoteStrain, OliveOil, OSULeaf, PhalangesOutlinesCorrect, Plane, ProximalPhalanxOutlineCorrect, ProximalPhalanxOutlineAgeGroup, Mallat, RefrigerationDevices, ScreenType, ShapeletSim, ShapesAll, SmallKitchenAppliances, SonyAIBORobotSurface1, SonyAIBORobotSurface2, Strawberry, SwedishLeaf, Symbols, SyntheticControl, ToeSegmentation1, ToeSegmentation2, Trace, TwoLeadECG, Wine, WordSynonyms, Worms, WormsTwoClass]
 seeds: [1, 2, 3, 4, 5]
 missing_rates: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
 source_patterns: [point, block]
@@ -9,6 +9,7 @@ imputers: [linear]
 classifiers: [dtw, minirocket, stat_rf]
 validation_size: 0.25
 classifier_params:
+  n_jobs: 18
   stat_rf_n_estimators: 500
   minirocket_n_kernels: 10000
-results_dir: results/main_protocol_v1_1
+results_dir: results/main_protocol_ucr64_v1_4
