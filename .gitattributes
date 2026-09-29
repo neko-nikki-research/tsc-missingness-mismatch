@@ -1,0 +1,5 @@
+# Published result data are stored byte-for-byte as the benchmark wrote them,
+# so their SHA-256 on GitHub matches the original run output.
+results/final_ucr64_v1_4/raw_results.csv -text
+results/final_ucr64_v1_4/selection_results.csv -text
+results/final_ucr64_v1_4/run_manifest.json -text

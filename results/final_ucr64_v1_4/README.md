@@ -29,6 +29,18 @@ The first nine datasets (Adiac to Computers) were produced before prediction
 caching was added; their raw rows show the same determinism, so both code
 versions produce identical results.
 
+### Checksums
+
+`.gitattributes` stores these three files byte-for-byte (Windows CRLF line
+endings, as the runner wrote them), so a clone on any platform reproduces the
+original run output exactly:
+
+| File | SHA-256 |
+| --- | --- |
+| `raw_results.csv` | `32b5b9eb429750836537e75496f8238905d05e23244634ca9de2b670c99ef03c` |
+| `selection_results.csv` | `22dbbffc7fd6ddf6f47ef64fe17a3a30268141a7cb6a4eaff50f054efd67e382` |
+| `run_manifest.json` | `3f7766f51d2f4b5b21e6db79cf20d231027ec262ba910596b7e845be9647300e` |
+
 ## Analysis (`analysis/`)
 
 Produced by `src.paired_analysis` following `PROTOCOL.md` section 10. Each
