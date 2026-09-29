@@ -57,11 +57,22 @@ The completed main-study results, verification notes, analysis tables and
 figures are committed under `results/final_ucr64_v1_4/`.
 
 The runner saves both result CSVs after each complete dataset. Rerunning the
-same command resumes from that checkpoint. Within one dataset, validation
-predictions are reused across target patterns and test predictions are reused
-across source patterns. `predict_time_seconds` estimates one validation plus
-one test prediction for each condition, including conditions served from the
-cache; it is not the total wall time spent by the optimized runner.
+same command resumes from that checkpoint, and `run_manifest.json` records the
+git commit that created the checkpoint and every later resume.
+
+Because the training split is never masked, each candidate is fitted once per
+seed and reused for every rate and pattern. Within one rate, validation
+predictions are reused across target patterns and test predictions across source
+patterns. 1NN-DTW sends all query series to aeon's distance kernel in one call,
+so `n_jobs` parallelises it; predictions, including the smaller-training-index
+tie rule, are identical to aeon's one-query-at-a-time loop. `fit_time_seconds`
+is the single fit of that classifier and seed; `predict_time_seconds` is one
+validation plus one test prediction. Both are repeated on every row they apply
+to, so they are not additive wall time.
+
+Re-running six datasets (Coffee, CBF, ECG200, ItalyPowerDemand, GunPoint, Car)
+with the optimized runner reproduced every non-timing value of the published
+results exactly.
 
 The raw output uses only explicit metric names: `val_balanced_accuracy`,
 `test_balanced_accuracy`, `selected_test_balanced_accuracy`, and

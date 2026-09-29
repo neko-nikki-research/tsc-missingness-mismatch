@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import math
+import subprocess
 import time
 from pathlib import Path
 
@@ -30,6 +31,22 @@ def _config_hash(config: dict) -> str:
     """Make an identifier so results from different configurations are not mixed."""
     encoded = json.dumps(config, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _code_version() -> dict:
+    """Record the source revision so results can be traced to the exact code."""
+    root = Path(__file__).resolve().parents[1]
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True
+        ).stdout.strip()
+        changes = subprocess.run(
+            ["git", "status", "--porcelain", "--", "src", "configs"],
+            cwd=root, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return {"git_commit": None, "uncommitted_source_changes": None}
+    return {"git_commit": commit, "uncommitted_source_changes": bool(changes)}
 
 
 def _read_csv_or_empty(path: Path) -> pd.DataFrame:
@@ -82,6 +99,7 @@ def _load_checkpoint(
     results_dir.mkdir(parents=True, exist_ok=True)
     raw_path, selection_path, manifest_path = _result_paths(results_dir)
     fingerprint = _config_hash(config)
+    code_version = _code_version()
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("config_hash") != fingerprint:
@@ -89,11 +107,17 @@ def _load_checkpoint(
                 "Existing checkpoint belongs to a different config. "
                 "Use a new results_dir to avoid mixing experiments."
             )
-    else:
-        manifest_path.write_text(
-            json.dumps({"config_hash": fingerprint, "config": config}, indent=2),
-            encoding="utf-8",
+        # The config hash does not cover the code. Record every resume so a
+        # checkpoint produced by more than one code version stays traceable.
+        manifest.setdefault("resumes", []).append(
+            {"resumed_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")} | code_version
         )
+        if manifest.get("code_version", {}).get("git_commit") != code_version["git_commit"]:
+            print("Warning: resuming a checkpoint created by different code; see run_manifest.json.",
+                  flush=True)
+    else:
+        manifest = {"config_hash": fingerprint, "config": config, "code_version": code_version}
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     if not resume:
         return pd.DataFrame(), pd.DataFrame(), set()
@@ -131,6 +155,21 @@ def run_config(
             X_train, y_train, X_val, y_val, X_test, y_test = load_ucr_with_validation(
                 dataset, config["validation_size"], seed
             )
+            # Training data stays complete, so it is identical for every rate and
+            # pattern. Fit each candidate once per seed and reuse it everywhere.
+            models, fit_seconds = {}, {}
+            for classifier_name in config["classifiers"]:
+                models[classifier_name] = make_classifier(classifier_name, seed, params)
+                started = time.perf_counter()
+                models[classifier_name].fit(X_train, y_train)
+                fit_seconds[classifier_name] = time.perf_counter() - started
+
+            def predict_once(split_X, split_y, classifier_name):
+                started = time.perf_counter()
+                predictions = models[classifier_name].predict(split_X)
+                seconds = time.perf_counter() - started
+                return calculate_classification_metrics(split_y, predictions), seconds
+
             rates = config.get("missing_rates")
             if rates is None:
                 rates = [config["missing_rate"]]
@@ -138,47 +177,40 @@ def run_config(
                 n_timepoints = X_train.shape[-1]
                 n_missing_per_series = math.floor(missing_rate * n_timepoints)
                 realized_missing_rate = n_missing_per_series / n_timepoints
-                # The test mask and fitted model do not depend on the source
-                # pattern. Reuse deployment predictions across source patterns.
-                test_results = {}
+                # Source missingness is a validation-only selection condition and
+                # target missingness is deployment-only. Validation predictions do
+                # not depend on the target pattern, nor test predictions on the
+                # source pattern, so each is computed once.
+                validation_results, test_results = {}, {}
                 for source_pattern in config["source_patterns"]:
-                    # Training data stays complete. Source missingness is a validation-only
-                    # selection condition, while target missingness is deployment-only.
                     X_val_masked, val_mask = apply_mask(X_val, source_pattern, missing_rate, seed + 1)
-                    # Validation predictions do not depend on the target pattern.
-                    validation_results = {}
+                    for imputer_name in config["imputers"]:
+                        X_val_ready = impute(X_val_masked, val_mask, imputer_name)
+                        for classifier_name in config["classifiers"]:
+                            validation_results[source_pattern, imputer_name, classifier_name] = (
+                                predict_once(X_val_ready, y_val, classifier_name)
+                            )
+                for target_pattern in config["target_patterns"]:
+                    X_test_masked, test_mask = apply_mask(X_test, target_pattern, missing_rate, seed + 2)
+                    for imputer_name in config["imputers"]:
+                        X_test_ready = impute(X_test_masked, test_mask, imputer_name)
+                        for classifier_name in config["classifiers"]:
+                            test_results[target_pattern, imputer_name, classifier_name] = (
+                                predict_once(X_test_ready, y_test, classifier_name)
+                            )
+                for source_pattern in config["source_patterns"]:
                     for target_pattern in config["target_patterns"]:
-                        X_test_masked, test_mask = apply_mask(X_test, target_pattern, missing_rate, seed + 2)
                         for imputer_name in config["imputers"]:
-                            X_train_ready = X_train
-                            X_val_ready = impute(X_val_masked, val_mask, imputer_name)
-                            X_test_ready = impute(X_test_masked, test_mask, imputer_name)
                             experiment_rows = []
                             for classifier_name in config["classifiers"]:
-                                classifier = make_classifier(classifier_name, seed, params)
-                                started = time.perf_counter()
-                                classifier.fit(X_train_ready, y_train)
-                                fit_seconds = time.perf_counter() - started
-                                validation_key = (imputer_name, classifier_name)
-                                if validation_key not in validation_results:
-                                    started = time.perf_counter()
-                                    val_pred = classifier.predict(X_val_ready)
-                                    val_predict_seconds = time.perf_counter() - started
-                                    val_metrics = calculate_classification_metrics(y_val, val_pred)
-                                    validation_results[validation_key] = (
-                                        val_metrics, val_predict_seconds
-                                    )
-                                val_metrics, val_predict_seconds = validation_results[validation_key]
-                                test_key = (target_pattern, imputer_name, classifier_name)
-                                if test_key not in test_results:
-                                    started = time.perf_counter()
-                                    test_pred = classifier.predict(X_test_ready)
-                                    test_predict_seconds = time.perf_counter() - started
-                                    test_metrics = calculate_classification_metrics(y_test, test_pred)
-                                    test_results[test_key] = (test_metrics, test_predict_seconds)
-                                test_metrics, test_predict_seconds = test_results[test_key]
-                                # Report the cost of one validation and one test prediction
-                                # for every condition, including cached conditions.
+                                val_metrics, val_predict_seconds = validation_results[
+                                    source_pattern, imputer_name, classifier_name
+                                ]
+                                test_metrics, test_predict_seconds = test_results[
+                                    target_pattern, imputer_name, classifier_name
+                                ]
+                                # Report the cost of one fit and one validation plus one
+                                # test prediction for every condition, including reused ones.
                                 predict_seconds = val_predict_seconds + test_predict_seconds
                                 row = {
                                     "dataset": dataset,
@@ -195,7 +227,8 @@ def run_config(
                                     "val_macro_f1": val_metrics["macro_f1"],
                                     "test_balanced_accuracy": test_metrics["balanced_accuracy"],
                                     "test_macro_f1": test_metrics["macro_f1"],
-                                    "fit_time_seconds": fit_seconds, "predict_time_seconds": predict_seconds,
+                                    "fit_time_seconds": fit_seconds[classifier_name],
+                                    "predict_time_seconds": predict_seconds,
                                 }
                                 dataset_raw_rows.append(row)
                                 experiment_rows.append(row)
