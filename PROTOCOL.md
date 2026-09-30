@@ -5,7 +5,7 @@
 **English title:**
 **The Effect of Missingness-Pattern Mismatch on Method Selection for Time-Series Classification: A Controlled Empirical Study**
 
-**Protocol version:** v1.4
+**Protocol version:** v1.5
 **Project status:** Development / Protocol updated
 **Project type:** Controlled empirical study
 **Primary task:** Univariate time-series classification
@@ -152,7 +152,7 @@ $$
 (18,19,20,1,2)
 $$
 
-这种设计保证每个时间位置在大量重复实验中具有相近的被遮蔽机会。
+这种设计使每个时间位置在重复随机放置中具有相同的边际被遮蔽机会。
 
 记该缺失模式为：
 
@@ -168,6 +168,8 @@ Circular block 用于控制实验中的位置暴露差异。
 
 它主要用于构造一个具有明显局部连续结构、同时避免固定边界效应的受控实验条件。
 
+Circularity 仅属于 masking construction；它不意味着底层时间序列具有周期性。
+
 ---
 
 ## 5. Supplementary Linear Block
@@ -181,7 +183,37 @@ Circular block 用于控制实验中的位置暴露差异。
 
 该条件用于检查主要观察结果是否依赖于 circular block 的具体构造。
 
-Linear block 不改变主实验问题，也不成为新的主要研究问题。
+Linear block 不改变主实验问题，也不成为新的主要研究变量；该分析仅用于检验主要结果对 block masking construction 的敏感性。
+
+### 5.1 Supplementary experiment design
+
+Linear-block robustness analysis 使用与主实验相同的 64 个数据集、5 个 random seeds、6 个 nominal missingness rates、3 个候选分类器、train/validation/test procedure、linear-interpolation procedure、model-selection rule 和 evaluation metrics。
+
+唯一的改变是 block missingness 的构造方式：补充实验使用 **non-wrapping linear contiguous blocks**，而不是主实验中的 circular contiguous blocks。
+
+由于 Point→Point 条件不涉及 block missingness，其主实验结果直接复用。需要重新运行的条件为：
+
+* Point→Block（PB）；
+* Block→Point（BP）；
+* Block→Block（BB）。
+
+因此补充实验新增：
+
+$$
+64\times5\times6\times3\times3=17,280
+$$
+
+次 classifier evaluations。
+
+对于相同的 dataset × seed × missingness rate：
+
+* BP 与 BB 使用同一个 linear-block validation mask；
+* PB 与 BB 使用同一个 target linear-block test mask；
+* Point missingness 的 mask generation 规则保持不变。
+
+该配对结构用于保持与主实验相同的 target-paired comparison framework。
+
+Linear-block robustness analysis 单独分析，不与 circular-block 主实验合并。
 
 ---
 
@@ -193,7 +225,7 @@ $$
 5\%,10\%,15\%,20\%,25\%,30\%
 $$
 
-本次 v1.1 更新将 5\%、15\% 和 25\% 纳入主实验，以更细致地观察
+本次 v1.1 更新将 5%、15% 和 25% 纳入主实验，以更细致地观察
 missingness-pattern mismatch 随缺失率变化的趋势。所有六档比例均使用相同的
 数据划分、masking、插补、候选分类器和模型选择流程。
 
@@ -322,6 +354,7 @@ $$
   $$
 
   两者是同一个效应，不重复报告为两个独立结果。
+
 * **Source-paired（次要分析）**：固定 validation pattern，只改变 test pattern，
   即 PP vs PB、BB vs BP。两者选中的模型相同，差值反映 deployment pattern 对 test
   表现和 oracle 的影响，而不是选择改变。
@@ -351,7 +384,16 @@ $$
 
 ### 10.6 补充实验与透明度
 
-* Linear block（第 5 节）使用同一分析流程，但单独成表，不与 circular-block 主实验合并。
+* Linear block（第 5 节）使用与主实验相同的 64 个数据集、5 个 seeds、6 个缺失比例、
+  3 个候选分类器和分析流程，仅将 circular contiguous block 替换为 non-wrapping
+  linear contiguous block。由于 PP 条件不涉及 block missingness，其主实验结果直接复用；
+  PB、BP 和 BB 条件重新运行。因此共新增 \(17,280\) 次 classifier evaluations。
+  该分析单独报告，不与 circular-block 主实验合并。
+* 在 linear-block robustness analysis 中，对于相同的 dataset × seed × missing rate，
+  BP 与 BB 共享同一个 linear-block validation mask，PB 与 BB 共享同一个 target
+  linear-block test mask；Point missingness 的 mask generation 规则保持不变。
+* Linear-block robustness analysis 不修改主实验的 circular-block protocol、主要指标、
+  主要统计分析或主实验结果，仅作为独立的 sensitivity analysis。
 * 在 64 个数据集完成前曾查看 27 个和 46 个数据集的描述性中期结果；中期结果未做推断检验，
   论文中如实说明。
 * 前 9 个数据集由加入预测缓存前的代码生成；已验证两版代码的 test/validation 结果逐条一致。
