@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 
 import src.run_benchmark as benchmark
@@ -114,6 +116,56 @@ def test_test_predictions_are_reused_across_source_patterns(monkeypatch):
 
     raw, selection = benchmark.run_config(config)
 
-    assert predictions == [21.0, 30.0, 30.0, 22.0]
+    # One validation prediction per source and one test prediction per target.
+    assert sorted(predictions) == [21.0, 22.0, 30.0, 30.0]
     assert len(raw) == len(selection) == 4
     assert raw["test_balanced_accuracy"].nunique() == 1
+
+
+def test_each_classifier_is_fitted_once_per_seed(monkeypatch):
+    X = np.full((2, 1, 10), 1.0)
+    y = np.array(["a", "b"])
+    fits = []
+
+    class CountingClassifier(_PerfectClassifier):
+        def fit(self, X, y):
+            fits.append(self.name)
+            return super().fit(X, y)
+
+    def fake_classifier(name, seed, params):
+        classifier = CountingClassifier()
+        classifier.name = (name, seed)
+        return classifier
+
+    monkeypatch.setattr(benchmark, "load_ucr_with_validation", lambda *args: (X, y, X, y, X, y))
+    monkeypatch.setattr(benchmark, "make_classifier", fake_classifier)
+    config = {
+        "datasets": ["Demo"], "seeds": [1, 2], "missing_rates": [0.1, 0.2, 0.3],
+        "source_patterns": ["point", "block"], "target_patterns": ["point", "block"],
+        "imputers": ["linear"], "classifiers": ["dtw", "stat_rf"], "validation_size": 0.25,
+    }
+
+    raw, selection = benchmark.run_config(config)
+
+    assert sorted(fits) == [("dtw", 1), ("dtw", 2), ("stat_rf", 1), ("stat_rf", 2)]
+    assert len(raw) == 2 * 3 * 4 * 2
+    assert len(selection) == 2 * 3 * 4
+
+
+def test_manifest_records_code_version_and_resumes(monkeypatch, tmp_path):
+    X = np.full((2, 1, 4), 1.0)
+    y = np.array(["a", "b"])
+    monkeypatch.setattr(benchmark, "load_ucr_with_validation", lambda *args: (X, y, X, y, X, y))
+    monkeypatch.setattr(benchmark, "make_classifier", lambda *args: _PerfectClassifier())
+    config = {
+        "datasets": ["Demo"], "seeds": [1], "missing_rate": 0.2,
+        "source_patterns": ["point"], "target_patterns": ["block"],
+        "imputers": ["linear"], "classifiers": ["dtw"], "validation_size": 0.25,
+    }
+
+    benchmark.run_config(config, checkpoint_dir=tmp_path)
+    benchmark.run_config(config, checkpoint_dir=tmp_path)
+
+    manifest = json.loads((tmp_path / "run_manifest.json").read_text(encoding="utf-8"))
+    assert set(manifest["code_version"]) == {"git_commit", "uncommitted_source_changes"}
+    assert len(manifest["resumes"]) == 1

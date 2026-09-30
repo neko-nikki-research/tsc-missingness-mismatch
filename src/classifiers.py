@@ -10,6 +10,23 @@ from sklearn.linear_model import RidgeClassifierCV
 from src.statistical_features import extract_statistical_features
 
 
+class BatchedKNeighborsTimeSeriesClassifier(KNeighborsTimeSeriesClassifier):
+    """aeon's k-NN, with every query sent to the distance function in one call.
+
+    aeon's ``_predict`` loops over one query series at a time. Its numba distance
+    kernel parallelises over queries, so that loop runs on a single thread
+    whatever ``n_jobs`` is. For uniform 1-NN this override computes the same
+    distances with aeon's own ``_kneighbors`` (same (distance, index) tie rule)
+    for all queries at once, so predictions are unchanged but use ``n_jobs``.
+    """
+
+    def _predict(self, X):
+        if self.n_neighbors != 1 or self.weights != "uniform":
+            return super()._predict(X)
+        neigh_ind = self._kneighbors(X, n_neighbors=1, return_distance=False, query_is_train=False)
+        return self.classes_[self.y_[neigh_ind[:, 0]]]
+
+
 class StatisticalFeaturesRandomForestClassifier(BaseEstimator, ClassifierMixin):
     """Fixed statistical-feature extractor followed by a Random Forest."""
 
@@ -41,7 +58,7 @@ def make_classifier(name: str, seed: int, params: dict):
     if n_jobs < 1:
         raise ValueError("classifier_params.n_jobs must be at least 1.")
     if name == "dtw":
-        return KNeighborsTimeSeriesClassifier(n_neighbors=1, distance="dtw", n_jobs=n_jobs)
+        return BatchedKNeighborsTimeSeriesClassifier(n_neighbors=1, distance="dtw", n_jobs=n_jobs)
     if name == "stat_rf":
         return StatisticalFeaturesRandomForestClassifier(
             n_estimators=int(params.get("stat_rf_n_estimators", 500)), random_state=seed, n_jobs=n_jobs
