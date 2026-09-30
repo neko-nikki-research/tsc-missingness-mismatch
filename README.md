@@ -74,6 +74,29 @@ Re-running six datasets (Coffee, CBF, ECG200, ItalyPowerDemand, GunPoint, Car)
 with the optimized runner reproduced every non-timing value of the published
 results exactly.
 
+## Linear-block robustness analysis (protocol v1.5, section 5.1)
+
+The supplementary analysis replaces the circular block with a non-wrapping
+linear block and changes nothing else. PP involves no block, so it is reused
+from the main study and only PB, BP and BB are run (64 × 5 × 6 × 3 × 3 = 17,280
+classifier evaluations). It is reported separately and never pooled with the
+circular-block main study.
+
+```powershell
+python -m src.run_benchmark --config configs\supplementary_linear_block.yaml
+python -m src.assemble_linear_block --main-results results\final_ucr64_v1_4 --supplementary-results results\supplementary_linear_block_v1_5 --config configs\supplementary_linear_block.yaml --output-dir results\final_linear_block_v1_5
+python -m src.paired_analysis --results-dir results\final_linear_block_v1_5 --config configs\supplementary_linear_block.yaml --output-dir results\final_linear_block_v1_5\analysis
+python -m src.plot_final_results --results-dir results\final_linear_block_v1_5 --config configs\supplementary_linear_block.yaml --figures-dir results\final_linear_block_v1_5\figures
+```
+
+`condition_pairs` in the config limits the runner to PB, BP and BB. Masks depend
+only on pattern, rate and seed, so BP and BB share one linear-block validation
+mask, PB and BB share one linear-block test mask, and point masks are generated
+exactly as in the main study. `src.assemble_linear_block` adds the main-study PP
+rows only after verifying that the new run's point-side validation (PB) and test
+(BP) balanced accuracies equal the main study's, i.e. that the point masks and
+fitted models are unchanged.
+
 The raw output uses only explicit metric names: `val_balanced_accuracy`,
 `test_balanced_accuracy`, `selected_test_balanced_accuracy`, and
 `oracle_test_balanced_accuracy`. Ordinary accuracy is neither used for model
@@ -85,7 +108,8 @@ selection nor written to the formal result files.
 configs/
   smoke.yaml                    # Small protocol-faithful end-to-end check
   main_protocol_balanced.yaml   # Formal PP/PB/BP/BB study
-  exploratory/                  # Separate robustness analyses; not main results
+  supplementary_linear_block.yaml  # Protocol v1.5 linear-block robustness run (PB/BP/BB)
+  exploratory/                  # Separate exploratory analyses; not main results
   legacy/                       # Superseded configs retained for history only
 src/
   run_benchmark.py              # Main experiment runner
@@ -94,13 +118,15 @@ src/
   imputation.py                 # Linear/zero/mean implementations
   classifiers.py                # Three pre-specified candidate methods
   evaluation.py                 # Selection, oracle, and regret logic
+  paired_analysis.py            # Dataset-level paired analysis (PROTOCOL.md section 10)
+  plot_final_results.py         # Publication figures
+  assemble_linear_block.py      # Main-study PP + linear-block PB/BP/BB, with reuse check
 tests/                          # Unit and protocol-invariant tests
 results/                        # Local generated outputs; CSVs and figures are gitignored
 ```
 
 `configs/exploratory/` may compare zero/mean imputation, prefix/suffix
-missingness, linear blocks, or extra missingness rates in future robustness
-work. These configurations must be reported separately and must not be pooled
+missingness, or extra missingness rates in future robustness work. These configurations must be reported separately and must not be pooled
 with the main PP/PB/BP/BB conclusions.
 
 

@@ -21,8 +21,7 @@ from src.paired_analysis import load_and_validate, pair_by_target, summarize_dat
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
 INK, INK_2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
 WORSE, BETTER, NEUTRAL = "#eb6834", "#2a78d6", "#a3a29c"
-CONDITIONS = [("point", "point", "PP"), ("point", "block", "PB"),
-              ("block", "point", "BP"), ("block", "block", "BB")]
+BLOCK_LABELS = {"block": "Block", "linear_block": "Linear-block"}
 CLASSIFIERS = [("minirocket", "MiniROCKET"), ("dtw", "1NN-DTW"), ("stat_rf", "Stat. features + RF")]
 
 
@@ -58,13 +57,25 @@ def _line_with_band(axis, frame, color, label, marker, linestyle="-"):
                   textcoords="offset points", va="center", fontsize=8, color=INK_2)
 
 
+def _conditions(block: str) -> list[tuple[str, str, str]]:
+    """PP, PB, BP and BB, where B is the block pattern of this analysis."""
+    return [("point", "point", "PP"), ("point", block, "PB"), (block, "point", "BP"), (block, block, "BB")]
+
+
+def _block_note(block: str) -> str:
+    """Footnote naming the block construction when it is not the main study's."""
+    if block == "block":
+        return ""
+    return " B = non-wrapping linear block (supplementary robustness analysis; PP reused from the main study)."
+
+
 def _save(figure, figures_dir: Path, name: str) -> None:
     for suffix in ("png", "pdf"):
         figure.savefig(figures_dir / f"{name}.{suffix}", dpi=300, bbox_inches="tight")
     plt.close(figure)
 
 
-def plot_mismatch_by_rate(pairs, figures_dir, n_bootstrap, seed):
+def plot_mismatch_by_rate(pairs, figures_dir, n_bootstrap, seed, block="block"):
     """Figure 1: target-paired mismatch cost by missing rate."""
     metrics = [("delta_selected_test_ba", "Test BA lost by mismatched validation (pp)",
                 "A  Deployment performance (= regret increase)"),
@@ -77,8 +88,9 @@ def plot_mismatch_by_rate(pairs, figures_dir, n_bootstrap, seed):
         axis.axhline(0, color=INK_2, linewidth=1)
         _line_with_band(axis, _summaries(by_stratum[by_stratum.target_pattern == "point"], ["missing_rate"],
                                          metric, n_bootstrap, seed), SERIES[0], "Point test: BP vs PP", "o")
-        _line_with_band(axis, _summaries(by_stratum[by_stratum.target_pattern == "block"], ["missing_rate"],
-                                         metric, n_bootstrap, seed), SERIES[1], "Block test: PB vs BB", "s")
+        _line_with_band(axis, _summaries(by_stratum[by_stratum.target_pattern == block], ["missing_rate"],
+                                         metric, n_bootstrap, seed), SERIES[1],
+                        f"{BLOCK_LABELS.get(block, block)} test: PB vs BB", "s")
         _line_with_band(axis, _summaries(pooled, ["missing_rate"], metric, n_bootstrap, seed),
                         INK, "Both targets", "D", linestyle="--")
         axis.set(title=title, xlabel="Missing rate (%)", ylabel=ylabel, xticks=[5, 10, 15, 20, 25, 30])
@@ -86,12 +98,13 @@ def plot_mismatch_by_rate(pairs, figures_dir, n_bootstrap, seed):
     handles, labels = axes[0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.04))
     figure.text(0.5, -0.04, f"Positive = mismatch is worse. Mean over {pairs.dataset.nunique()} datasets; "
-                "bands are 95% bootstrap CIs over datasets.", ha="center", fontsize=8, color=INK_2)
+                "bands are 95% bootstrap CIs over datasets." + _block_note(block),
+                ha="center", fontsize=8, color=INK_2, wrap=True)
     figure.tight_layout()
     _save(figure, figures_dir, "fig1_mismatch_cost_by_rate")
 
 
-def plot_conditions_by_rate(selection, figures_dir, n_bootstrap, seed):
+def plot_conditions_by_rate(selection, figures_dir, n_bootstrap, seed, block="block"):
     """Figure 2: regret and selection error for PP, PB, BP and BB."""
     per_dataset = selection.groupby(["dataset", "missing_rate", "source_pattern", "target_pattern"])[
         ["regret", "selection_error"]].mean().reset_index()
@@ -100,7 +113,7 @@ def plot_conditions_by_rate(selection, figures_dir, n_bootstrap, seed):
         ("regret", "Selection regret (pp of test BA)", "A  Regret against the candidate-set test oracle"),
         ("selection_error", "Selection error rate (%)", "B  Selection error rate"),
     ]):
-        for color, marker, (source, target, name) in zip(SERIES, "osD^", CONDITIONS):
+        for color, marker, (source, target, name) in zip(SERIES, "osD^", _conditions(block)):
             group = per_dataset[(per_dataset.source_pattern == source) & (per_dataset.target_pattern == target)]
             _line_with_band(axis, _summaries(group, ["missing_rate"], metric, n_bootstrap, seed),
                             color, name, marker, linestyle="-" if source == target else "--")
@@ -111,7 +124,8 @@ def plot_conditions_by_rate(selection, figures_dir, n_bootstrap, seed):
     figure.legend(handles, ["PP (matched)", "PB (mismatched)", "BP (mismatched)", "BB (matched)"],
                   loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.04))
     figure.text(0.5, -0.04, "Validation pattern → test pattern. Solid = matched, dashed = mismatched; "
-                "bands are 95% bootstrap CIs over datasets.", ha="center", fontsize=8, color=INK_2)
+                "bands are 95% bootstrap CIs over datasets." + _block_note(block),
+                ha="center", fontsize=8, color=INK_2, wrap=True)
     figure.tight_layout()
     _save(figure, figures_dir, "fig2_conditions_by_rate")
 
@@ -135,10 +149,11 @@ def plot_per_dataset(pairs, figures_dir):
     _save(figure, figures_dir, "fig3_per_dataset_effect")
 
 
-def plot_classifier_shares(selection, figures_dir):
+def plot_classifier_shares(selection, figures_dir, block="block"):
     """Figure 4: which classifier is selected, and which is the test oracle."""
+    conditions = _conditions(block)
     rows = []
-    for source, target, name in CONDITIONS:
+    for source, target, name in conditions:
         group = selection[(selection.source_pattern == source) & (selection.target_pattern == target)]
         for key, label in CLASSIFIERS:
             selected = (group.selected_classifier == key).astype(float).groupby(group.dataset).mean().mean()
@@ -150,7 +165,7 @@ def plot_classifier_shares(selection, figures_dir):
     figure, axes = plt.subplots(1, 2, figsize=(10, 3.4), sharey=True)
     for axis, measure in zip(axes, ["Selected by validation", "Best on test (oracle)"]):
         table = shares.pivot(index="condition", columns="classifier", values=measure).loc[
-            [name for *_, name in CONDITIONS][::-1], [label for _, label in CLASSIFIERS]] * 100
+            [name for *_, name in conditions][::-1], [label for _, label in CLASSIFIERS]] * 100
         left = np.zeros(len(table))
         for color, label in zip(SERIES, table.columns):
             axis.barh(table.index, table[label], left=left, color=color, height=0.62,
@@ -164,8 +179,8 @@ def plot_classifier_shares(selection, figures_dir):
         axis.grid(axis="y", visible=False)
     handles, labels = axes[0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.06))
-    figure.text(0.5, -0.05, "Oracle ties between k classifiers give each 1/k.", ha="center",
-                fontsize=8, color=INK_2)
+    figure.text(0.5, -0.05, "Oracle ties between k classifiers give each 1/k." + _block_note(block),
+                ha="center", fontsize=8, color=INK_2, wrap=True)
     figure.tight_layout()
     _save(figure, figures_dir, "fig4_classifier_selection")
 
@@ -183,11 +198,14 @@ def main() -> None:
     figures_dir = Path(args.figures_dir)
     figures_dir.mkdir(parents=True, exist_ok=True)
     _style()
+    # The non-point pattern is B: circular "block" in the main study,
+    # "linear_block" in the robustness analysis.
+    block = next(pattern for pattern in config["target_patterns"] if pattern != "point")
     pairs = pair_by_target(selection)
-    plot_mismatch_by_rate(pairs, figures_dir, args.n_bootstrap, args.seed)
-    plot_conditions_by_rate(selection, figures_dir, args.n_bootstrap, args.seed)
+    plot_mismatch_by_rate(pairs, figures_dir, args.n_bootstrap, args.seed, block)
+    plot_conditions_by_rate(selection, figures_dir, args.n_bootstrap, args.seed, block)
     plot_per_dataset(pairs, figures_dir)
-    plot_classifier_shares(selection, figures_dir)
+    plot_classifier_shares(selection, figures_dir, block)
     print(f"Saved 4 figures for {len(datasets)} datasets to {figures_dir}")
 
 

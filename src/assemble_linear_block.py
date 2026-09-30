@@ -1,0 +1,98 @@
+"""Assemble the linear-block robustness results (protocol v1.5 section 5.1).
+
+PP involves no block missingness, so it is reused from the main study while
+PB, BP and BB are run with non-wrapping linear blocks. Reuse is valid only if
+the point side of the new run is identical to the main study: the point
+validation mask (used by PB) and the point test mask (used by BP) are generated
+by the unchanged point rule, and the fitted models are the same. This module
+checks exactly that before writing a complete PP/PB/BP/BB result set.
+"""
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+
+import pandas as pd
+import yaml
+
+KEYS = ["dataset", "seed", "missing_rate", "imputer", "classifier"]
+TOLERANCE = 1e-12
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def assemble(main_dir: Path, supplementary_dir: Path, point: str = "point") -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return raw and selection rows: main-study PP plus the supplementary run."""
+    main_raw = pd.read_csv(main_dir / "raw_results.csv")
+    main_selection = pd.read_csv(main_dir / "selection_results.csv")
+    new_raw = pd.read_csv(supplementary_dir / "raw_results.csv")
+    new_selection = pd.read_csv(supplementary_dir / "selection_results.csv")
+
+    if ((new_raw.source_pattern == point) & (new_raw.target_pattern == point)).any():
+        raise ValueError("The supplementary run must not contain PP; PP is reused from the main study.")
+    datasets = sorted(new_raw.dataset.unique())
+    missing = set(datasets) - set(main_raw.dataset)
+    if missing:
+        raise ValueError(f"Main study has no results for: {sorted(missing)}")
+
+    is_pp = (main_raw.source_pattern == point) & (main_raw.target_pattern == point)
+    main_pp = main_raw[is_pp & main_raw.dataset.isin(datasets)]
+    is_pp_selection = (main_selection.source_pattern == point) & (main_selection.target_pattern == point)
+    main_pp_selection = main_selection[is_pp_selection & main_selection.dataset.isin(datasets)]
+
+    # Point validation (PB) and point test (BP) must reproduce main-study PP.
+    reference = main_pp.set_index(KEYS)
+    checks = [("val_balanced_accuracy", new_raw.source_pattern == point),
+              ("test_balanced_accuracy", new_raw.target_pattern == point)]
+    for column, rows in checks:
+        new = new_raw[rows].set_index(KEYS)[column]
+        if new.empty:
+            raise ValueError(f"No point-side rows to verify {column}")
+        old = reference[column].reindex(new.index)
+        if old.isna().any() or (new - old).abs().max() > TOLERANCE:
+            raise ValueError(
+                f"Point-side {column} differs from the main study, so PP cannot be reused."
+            )
+
+    raw = pd.concat([main_pp, new_raw], ignore_index=True)
+    selection = pd.concat([main_pp_selection, new_selection], ignore_index=True)
+    return raw, selection
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--main-results", required=True, help="Main-study results (source of PP)")
+    parser.add_argument("--supplementary-results", required=True, help="Linear-block PB/BP/BB run")
+    parser.add_argument("--config", required=True, help="Supplementary config")
+    parser.add_argument("--output-dir", required=True)
+    args = parser.parse_args()
+    main_dir, supplementary_dir = Path(args.main_results), Path(args.supplementary_results)
+    output_dir = Path(args.output_dir)
+    if output_dir.resolve() in {main_dir.resolve(), supplementary_dir.resolve()}:
+        raise ValueError("Write the assembled results to a separate directory")
+    config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
+    point = next(pattern for pattern in config["source_patterns"] if pattern == "point")
+
+    raw, selection = assemble(main_dir, supplementary_dir, point)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    raw.to_csv(output_dir / "raw_results.csv", index=False)
+    selection.to_csv(output_dir / "selection_results.csv", index=False)
+    sources = {
+        "main_study_pp": {name: _sha256(main_dir / name) for name in ("raw_results.csv", "selection_results.csv")},
+        "linear_block_run": {name: _sha256(supplementary_dir / name)
+                             for name in ("raw_results.csv", "selection_results.csv")},
+    }
+    (output_dir / "assembly_manifest.json").write_text(json.dumps({
+        "description": "PP rows reused from the main study; PB, BP and BB from the linear-block run. "
+                       "Point-side validation and test balanced accuracies were verified identical.",
+        "main_results": str(main_dir), "supplementary_results": str(supplementary_dir),
+        "input_sha256": sources, "n_raw_rows": len(raw), "n_selection_rows": len(selection),
+    }, indent=2), encoding="utf-8")
+    print(f"Assembled {len(selection)} selection rows ({raw.dataset.nunique()} datasets) into {output_dir}")
+
+
+if __name__ == "__main__":
+    main()
