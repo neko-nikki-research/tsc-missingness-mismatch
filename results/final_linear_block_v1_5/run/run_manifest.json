@@ -1,0 +1,127 @@
+{
+  "config_hash": "515012a685a43757c9c621e18de380fe64034e94c4cc2b289c99ec94ee699584",
+  "config": {
+    "datasets": [
+      "Adiac",
+      "ArrowHead",
+      "Beef",
+      "BeetleFly",
+      "BirdChicken",
+      "Car",
+      "CBF",
+      "Coffee",
+      "Computers",
+      "CricketX",
+      "CricketY",
+      "CricketZ",
+      "FaceAll",
+      "DistalPhalanxOutlineCorrect",
+      "DistalPhalanxOutlineAgeGroup",
+      "DistalPhalanxTW",
+      "Earthquakes",
+      "ECG200",
+      "ECG5000",
+      "ECGFiveDays",
+      "FaceFour",
+      "FacesUCR",
+      "Fish",
+      "GunPoint",
+      "Ham",
+      "Haptics",
+      "CinCECGTorso",
+      "InsectWingbeatSound",
+      "ItalyPowerDemand",
+      "LargeKitchenAppliances",
+      "Lightning2",
+      "Lightning7",
+      "Meat",
+      "MedicalImages",
+      "MiddlePhalanxOutlineCorrect",
+      "MiddlePhalanxOutlineAgeGroup",
+      "MiddlePhalanxTW",
+      "MoteStrain",
+      "OliveOil",
+      "OSULeaf",
+      "PhalangesOutlinesCorrect",
+      "Plane",
+      "ProximalPhalanxOutlineCorrect",
+      "ProximalPhalanxOutlineAgeGroup",
+      "Mallat",
+      "RefrigerationDevices",
+      "ScreenType",
+      "ShapeletSim",
+      "ShapesAll",
+      "SmallKitchenAppliances",
+      "SonyAIBORobotSurface1",
+      "SonyAIBORobotSurface2",
+      "Strawberry",
+      "SwedishLeaf",
+      "Symbols",
+      "SyntheticControl",
+      "ToeSegmentation1",
+      "ToeSegmentation2",
+      "Trace",
+      "TwoLeadECG",
+      "Wine",
+      "WordSynonyms",
+      "Worms",
+      "WormsTwoClass"
+    ],
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "missing_rates": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.25,
+      0.3
+    ],
+    "source_patterns": [
+      "point",
+      "linear_block"
+    ],
+    "target_patterns": [
+      "point",
+      "linear_block"
+    ],
+    "condition_pairs": [
+      [
+        "point",
+        "linear_block"
+      ],
+      [
+        "linear_block",
+        "point"
+      ],
+      [
+        "linear_block",
+        "linear_block"
+      ]
+    ],
+    "imputers": [
+      "linear"
+    ],
+    "classifiers": [
+      "dtw",
+      "minirocket",
+      "stat_rf"
+    ],
+    "validation_size": 0.25,
+    "classifier_params": {
+      "n_jobs": 24,
+      "stat_rf_n_estimators": 500,
+      "minirocket_n_kernels": 10000
+    },
+    "results_dir": "results/supplementary_linear_block_v1_5"
+  },
+  "code_version": {
+    "git_commit": "57e5ffae999b64eb34aa44afe58380ebecee4331",
+    "uncommitted_source_changes": false
+  }
+}

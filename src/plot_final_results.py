@@ -47,14 +47,41 @@ def _summaries(per_dataset: pd.DataFrame, groups: list[str], metric: str,
     return pd.DataFrame(rows)
 
 
-def _line_with_band(axis, frame, color, label, marker, linestyle="-"):
+def _line_with_band(axis, frame, color, label, marker, linestyle="-", end_text=None):
     x = frame.missing_rate * 100
     axis.fill_between(x, frame.ci95_low * 100, frame.ci95_high * 100, color=color, alpha=0.14, linewidth=0)
     axis.plot(x, frame["mean"] * 100, color=color, marker=marker, markersize=6, linestyle=linestyle,
               label=label, markeredgecolor=SURFACE, markeredgewidth=1.2)
     last = frame.iloc[-1]
-    axis.annotate(label, (last.missing_rate * 100, last["mean"] * 100), xytext=(6, 0),
-                  textcoords="offset points", va="center", fontsize=8, color=INK_2)
+    end_label = axis.annotate(end_text or label, (last.missing_rate * 100, last["mean"] * 100), xytext=(6, 0),
+                              textcoords="offset points", va="center", fontsize=8, color=INK_2)
+    if not hasattr(axis, "end_labels"):
+        axis.end_labels = []
+    axis.end_labels.append(end_label)
+
+
+def _spread_end_labels(axis, min_gap_fraction=0.06):
+    """Spread crowded end-of-line labels evenly around their cluster's centre.
+
+    Labels closer than the minimum gap form a cluster; spacing it symmetrically
+    about the cluster mean keeps every label next to its own line end.
+    """
+    labels = sorted(getattr(axis, "end_labels", []), key=lambda label: label.xy[1])
+    if not labels:
+        return
+    low, high = axis.get_ylim()
+    gap = (high - low) * min_gap_fraction
+    clusters = [[labels[0]]]
+    for label in labels[1:]:
+        if label.xy[1] - clusters[-1][-1].xy[1] < gap:
+            clusters[-1].append(label)
+        else:
+            clusters.append([label])
+    for cluster in clusters:
+        centre = np.mean([label.xy[1] for label in cluster])
+        start = centre - gap * (len(cluster) - 1) / 2
+        for position, label in enumerate(cluster):
+            label.xy = (label.xy[0], start + position * gap)
 
 
 def _conditions(block: str) -> list[tuple[str, str, str]]:
@@ -95,6 +122,7 @@ def plot_mismatch_by_rate(pairs, figures_dir, n_bootstrap, seed, block="block"):
                         INK, "Both targets", "D", linestyle="--")
         axis.set(title=title, xlabel="Missing rate (%)", ylabel=ylabel, xticks=[5, 10, 15, 20, 25, 30])
         axis.set_xlim(3.5, 38)
+        _spread_end_labels(axis)
     handles, labels = axes[0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.04))
     figure.text(0.5, -0.04, f"Positive = mismatch is worse. Mean over {pairs.dataset.nunique()} datasets; "
@@ -120,6 +148,7 @@ def plot_conditions_by_rate(selection, figures_dir, n_bootstrap, seed, block="bl
         axis.set(title=title, xlabel="Missing rate (%)", ylabel=ylabel, xticks=[5, 10, 15, 20, 25, 30])
         axis.set_xlim(3.5, 34)
         axis.set_ylim(bottom=0)
+        _spread_end_labels(axis)
     handles, labels = axes[0].get_legend_handles_labels()
     figure.legend(handles, ["PP (matched)", "PB (mismatched)", "BP (mismatched)", "BB (matched)"],
                   loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.04))
@@ -185,6 +214,44 @@ def plot_classifier_shares(selection, figures_dir, block="block"):
     _save(figure, figures_dir, "fig4_classifier_selection")
 
 
+def plot_block_comparison(main_pairs, robustness_pairs, figures_dir, n_bootstrap, seed, block):
+    """Figure 5: target-paired mismatch cost with circular vs. linear blocks.
+
+    Each analysis is summarised on its own datasets-as-units basis; the two
+    are shown side by side, never pooled.
+    """
+    metric = "delta_selected_test_ba"
+    series = [(main_pairs, "block", SERIES[0], "Circular block (main study)", "Circular", "o"),
+              (robustness_pairs, block, SERIES[1],
+               f"{BLOCK_LABELS.get(block, block)} (robustness analysis)", "Linear", "s")]
+    panels = [("point", "A  Point test: BP vs PP"), ("block", "B  Block test: PB vs BB"),
+              (None, "C  Both targets")]
+    figure, axes = plt.subplots(1, 3, figsize=(13, 3.9), sharex=True, sharey=True)
+    for axis, (target, title) in zip(axes, panels):
+        axis.axhline(0, color=INK_2, linewidth=1)
+        for pairs, block_name, color, label, end_text, marker in series:
+            if target is None:
+                subset = pairs
+            else:
+                subset = pairs[pairs.target_pattern == ("point" if target == "point" else block_name)]
+            per_dataset = subset.groupby(["dataset", "missing_rate"])[metric].mean().reset_index()
+            _line_with_band(axis, _summaries(per_dataset, ["missing_rate"], metric, n_bootstrap, seed),
+                            color, label, marker, end_text=end_text)
+        axis.set(title=title, xlabel="Missing rate (%)", xticks=[5, 10, 15, 20, 25, 30])
+        axis.set_xlim(3.5, 35)
+        axis.label_outer()
+    axes[0].set_ylabel("Test BA lost by mismatched validation (pp)")
+    for axis in axes:
+        _spread_end_labels(axis)
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(handles, labels, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.04))
+    figure.text(0.5, -0.04, "Positive = mismatch is worse (= regret increase). Each analysis: mean over "
+                f"{main_pairs.dataset.nunique()} datasets with 95% bootstrap CIs over datasets; "
+                "PP is shared, the analyses are not pooled.", ha="center", fontsize=8, color=INK_2, wrap=True)
+    figure.tight_layout()
+    _save(figure, figures_dir, "fig5_circular_vs_linear_block")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--results-dir", required=True)
@@ -192,6 +259,8 @@ def main() -> None:
     parser.add_argument("--figures-dir", required=True)
     parser.add_argument("--n-bootstrap", type=int, default=10000)
     parser.add_argument("--seed", type=int, default=20260928)
+    parser.add_argument("--compare-results", help="Main-study results, for the circular vs. linear figure")
+    parser.add_argument("--compare-config", help="Config of --compare-results")
     args = parser.parse_args()
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     selection, datasets = load_and_validate(Path(args.results_dir), config, allow_incomplete=False)
@@ -206,7 +275,14 @@ def main() -> None:
     plot_conditions_by_rate(selection, figures_dir, args.n_bootstrap, args.seed, block)
     plot_per_dataset(pairs, figures_dir)
     plot_classifier_shares(selection, figures_dir, block)
-    print(f"Saved 4 figures for {len(datasets)} datasets to {figures_dir}")
+    n_figures = 4
+    if args.compare_results:
+        compare_config = yaml.safe_load(Path(args.compare_config).read_text(encoding="utf-8"))
+        main_selection, _ = load_and_validate(Path(args.compare_results), compare_config)
+        plot_block_comparison(pair_by_target(main_selection), pairs, figures_dir,
+                              args.n_bootstrap, args.seed, block)
+        n_figures += 1
+    print(f"Saved {n_figures} figures for {len(datasets)} datasets to {figures_dir}")
 
 
 if __name__ == "__main__":

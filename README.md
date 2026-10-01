@@ -86,8 +86,12 @@ circular-block main study.
 python -m src.run_benchmark --config configs\supplementary_linear_block.yaml
 python -m src.assemble_linear_block --main-results results\final_ucr64_v1_4 --supplementary-results results\supplementary_linear_block_v1_5 --config configs\supplementary_linear_block.yaml --output-dir results\final_linear_block_v1_5
 python -m src.paired_analysis --results-dir results\final_linear_block_v1_5 --config configs\supplementary_linear_block.yaml --output-dir results\final_linear_block_v1_5\analysis
-python -m src.plot_final_results --results-dir results\final_linear_block_v1_5 --config configs\supplementary_linear_block.yaml --figures-dir results\final_linear_block_v1_5\figures
+python -m src.plot_final_results --results-dir results\final_linear_block_v1_5 --config configs\supplementary_linear_block.yaml --figures-dir results\final_linear_block_v1_5\figures --compare-results results\final_ucr64_v1_4 --compare-config configs\main_protocol_balanced.yaml
 ```
+
+The completed run, verification notes, analysis tables and figures (including
+a circular- versus linear-block comparison) are committed under
+`results/final_linear_block_v1_5/`.
 
 `condition_pairs` in the config limits the runner to PB, BP and BB. Masks depend
 only on pattern, rate and seed, so BP and BB share one linear-block validation

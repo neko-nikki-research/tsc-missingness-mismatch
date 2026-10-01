@@ -3,3 +3,6 @@
 results/final_ucr64_v1_4/raw_results.csv -text
 results/final_ucr64_v1_4/selection_results.csv -text
 results/final_ucr64_v1_4/run_manifest.json -text
+results/final_linear_block_v1_5/run/raw_results.csv -text
+results/final_linear_block_v1_5/run/selection_results.csv -text
+results/final_linear_block_v1_5/run/run_manifest.json -text

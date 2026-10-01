@@ -137,3 +137,20 @@ def test_figures_for_the_linear_block_analysis(tmp_path, monkeypatch):
                                      "--figures-dir", str(tmp_path / "figures"), "--n-bootstrap", "50"])
     plot_final_results.main()
     assert len(list((tmp_path / "figures").glob("*.png"))) == 4
+
+
+def test_circular_versus_linear_comparison_figure(tmp_path, monkeypatch):
+    main_dir, new_dir = _main_and_supplementary(tmp_path)
+    out = tmp_path / "assembled"
+    _write(out, *assemble(main_dir, new_dir))
+    linear_config, main_config = tmp_path / "linear.yaml", tmp_path / "main.yaml"
+    linear_config.write_text(yaml.safe_dump(SUPPLEMENTARY), encoding="utf-8")
+    circular = {k: v for k, v in SUPPLEMENTARY.items() if k != "condition_pairs"} | {
+        "source_patterns": ["point", "block"], "target_patterns": ["point", "block"]}
+    main_config.write_text(yaml.safe_dump(circular), encoding="utf-8")
+    monkeypatch.setattr("sys.argv", [
+        "plot", "--results-dir", str(out), "--config", str(linear_config),
+        "--figures-dir", str(tmp_path / "figures"), "--n-bootstrap", "50",
+        "--compare-results", str(main_dir), "--compare-config", str(main_config)])
+    plot_final_results.main()
+    assert (tmp_path / "figures" / "fig5_circular_vs_linear_block.png").exists()
