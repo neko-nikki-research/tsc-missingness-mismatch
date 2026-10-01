@@ -1,0 +1,17 @@
+{
+  "description": "PP rows reused from the main study; PB, BP and BB from the linear-block run. Point-side validation and test balanced accuracies were verified identical.",
+  "main_results": "results\\final_ucr64_v1_4",
+  "supplementary_results": "results\\supplementary_linear_block_v1_5",
+  "input_sha256": {
+    "main_study_pp": {
+      "raw_results.csv": "32b5b9eb429750836537e75496f8238905d05e23244634ca9de2b670c99ef03c",
+      "selection_results.csv": "22dbbffc7fd6ddf6f47ef64fe17a3a30268141a7cb6a4eaff50f054efd67e382"
+    },
+    "linear_block_run": {
+      "raw_results.csv": "bc9a491e2433d45f6ee6afecf6168cdb46842aba3b3aad33ea61222a9de76fd2",
+      "selection_results.csv": "8b198f7ceb9ca9b1bf2602bdac88d3ac0efdb677ac051a43e85fe67821d03b17"
+    }
+  },
+  "n_raw_rows": 23040,
+  "n_selection_rows": 7680
+}

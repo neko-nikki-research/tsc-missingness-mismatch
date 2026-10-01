@@ -1,0 +1,21 @@
+# Protocol v1.5 section 5.1: linear-block robustness analysis.
+# Identical to configs/main_protocol_balanced.yaml except that block missingness
+# is a non-wrapping linear contiguous block. PP does not involve blocks, so it is
+# reused from the main study; only PB, BP and BB are run (17,280 evaluations).
+# Reported separately; never pooled with the circular-block main study.
+# n_jobs is 24 (the main study used 18); it sets parallelism only, and the
+# classifiers are deterministic, so results do not depend on it.
+datasets: [Adiac, ArrowHead, Beef, BeetleFly, BirdChicken, Car, CBF, Coffee, Computers, CricketX, CricketY, CricketZ, FaceAll, DistalPhalanxOutlineCorrect, DistalPhalanxOutlineAgeGroup, DistalPhalanxTW, Earthquakes, ECG200, ECG5000, ECGFiveDays, FaceFour, FacesUCR, Fish, GunPoint, Ham, Haptics, CinCECGTorso, InsectWingbeatSound, ItalyPowerDemand, LargeKitchenAppliances, Lightning2, Lightning7, Meat, MedicalImages, MiddlePhalanxOutlineCorrect, MiddlePhalanxOutlineAgeGroup, MiddlePhalanxTW, MoteStrain, OliveOil, OSULeaf, PhalangesOutlinesCorrect, Plane, ProximalPhalanxOutlineCorrect, ProximalPhalanxOutlineAgeGroup, Mallat, RefrigerationDevices, ScreenType, ShapeletSim, ShapesAll, SmallKitchenAppliances, SonyAIBORobotSurface1, SonyAIBORobotSurface2, Strawberry, SwedishLeaf, Symbols, SyntheticControl, ToeSegmentation1, ToeSegmentation2, Trace, TwoLeadECG, Wine, WordSynonyms, Worms, WormsTwoClass]
+seeds: [1, 2, 3, 4, 5]
+missing_rates: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
+source_patterns: [point, linear_block]
+target_patterns: [point, linear_block]
+condition_pairs: [[point, linear_block], [linear_block, point], [linear_block, linear_block]]
+imputers: [linear]
+classifiers: [dtw, minirocket, stat_rf]
+validation_size: 0.25
+classifier_params:
+  n_jobs: 24
+  stat_rf_n_estimators: 500
+  minirocket_n_kernels: 10000
+results_dir: results/supplementary_linear_block_v1_5

@@ -55,14 +55,28 @@ def _read_csv_or_empty(path: Path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def _condition_pairs(config: dict) -> set[tuple[str, str]]:
+    """Return the (source, target) pattern pairs to run.
+
+    The default is the full source x target design. ``condition_pairs`` runs a
+    subset, e.g. the linear-block robustness run reuses PP from the main study.
+    """
+    full = {(s, t) for s in config["source_patterns"] for t in config["target_patterns"]}
+    if "condition_pairs" not in config:
+        return full
+    pairs = {tuple(pair) for pair in config["condition_pairs"]}
+    if not pairs or not pairs <= full:
+        raise ValueError("condition_pairs must be a non-empty subset of source x target patterns.")
+    return pairs
+
+
 def _expected_rows_per_dataset(config: dict) -> tuple[int, int]:
     """Return expected raw and selection row counts for one dataset."""
     rates = config.get("missing_rates", [config.get("missing_rate")])
     conditions = (
         len(config["seeds"])
         * len(rates)
-        * len(config["source_patterns"])
-        * len(config["target_patterns"])
+        * len(_condition_pairs(config))
         * len(config["imputers"])
     )
     return conditions * len(config["classifiers"]), conditions
@@ -151,6 +165,11 @@ def run_config(
             continue
         print(f"Running dataset: {dataset}", flush=True)
         dataset_raw_rows, dataset_selection_rows = [], []
+        # A mask depends only on its pattern, rate and seed, so every pair that
+        # shares a validation (or test) pattern also shares the same mask.
+        pairs = _condition_pairs(config)
+        sources = [s for s in config["source_patterns"] if any(s == p[0] for p in pairs)]
+        targets = [t for t in config["target_patterns"] if any(t == p[1] for p in pairs)]
         for seed in config["seeds"]:
             X_train, y_train, X_val, y_val, X_test, y_test = load_ucr_with_validation(
                 dataset, config["validation_size"], seed
@@ -182,7 +201,7 @@ def run_config(
                 # not depend on the target pattern, nor test predictions on the
                 # source pattern, so each is computed once.
                 validation_results, test_results = {}, {}
-                for source_pattern in config["source_patterns"]:
+                for source_pattern in sources:
                     X_val_masked, val_mask = apply_mask(X_val, source_pattern, missing_rate, seed + 1)
                     for imputer_name in config["imputers"]:
                         X_val_ready = impute(X_val_masked, val_mask, imputer_name)
@@ -190,7 +209,7 @@ def run_config(
                             validation_results[source_pattern, imputer_name, classifier_name] = (
                                 predict_once(X_val_ready, y_val, classifier_name)
                             )
-                for target_pattern in config["target_patterns"]:
+                for target_pattern in targets:
                     X_test_masked, test_mask = apply_mask(X_test, target_pattern, missing_rate, seed + 2)
                     for imputer_name in config["imputers"]:
                         X_test_ready = impute(X_test_masked, test_mask, imputer_name)
@@ -200,6 +219,8 @@ def run_config(
                             )
                 for source_pattern in config["source_patterns"]:
                     for target_pattern in config["target_patterns"]:
+                        if (source_pattern, target_pattern) not in pairs:
+                            continue
                         for imputer_name in config["imputers"]:
                             experiment_rows = []
                             for classifier_name in config["classifiers"]:
