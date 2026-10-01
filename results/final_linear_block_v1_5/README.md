@@ -8,9 +8,14 @@ with the circular-block main results in `results/final_ucr64_v1_4/`.
 - Configuration: `configs/supplementary_linear_block.yaml` (64 datasets, seeds
   1–5, rates 5–30%, the three main-study classifiers and parameters;
   `n_jobs: 24`, which sets parallelism only).
-- Run: commit `57e5ffa`, 2026-10-01 08:44–12:25 +0900, no uncommitted source
-  changes and no resumes (`run/run_manifest.json`). An earlier 18-core start
-  was stopped after 8 datasets and is not used.
+- Run: 2026-10-01 08:44–12:25 +0900, no uncommitted source changes and no
+  resumes (`run/run_manifest.json`). An earlier 18-core start was stopped after
+  8 datasets and is not used.
+- Code version: `run/run_manifest.json` records commit `57e5ffa`. That commit's
+  message was later edited (a co-author trailer removed) without changing any
+  file, so the same code is now commit `a9144e9`; both have source tree
+  `3533efe67d490a4ba66a78da9baead794179104e`
+  (`git rev-parse a9144e9^{tree}`).
 - PP involves no block, so it is reused from the main study; the run produced
   PB, BP and BB only: 17,280 raw rows and 5,760 selection rows (`run/`).
 
