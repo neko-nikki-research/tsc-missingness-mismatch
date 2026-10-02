@@ -68,5 +68,5 @@ Produced by `src.plot_final_results`; all intervals are bootstrap CIs over datas
 3. `fig3_per_dataset_effect` — dataset-level mean cost for all 64 datasets.
 4. `fig4_classifier_selection` — which classifier is selected vs. best on test.
 
-The supplementary linear-block analysis (`PROTOCOL.md` section 5) is not part of
-these results and will be reported separately.
+The supplementary linear-block analysis (`PROTOCOL.md` section 5.1) is not part
+of these results; it is reported separately in `results/final_linear_block_v1_5/`.
