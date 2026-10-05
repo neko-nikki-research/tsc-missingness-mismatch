@@ -22,7 +22,7 @@ SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
 INK, INK_2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
 WORSE, BETTER, NEUTRAL = "#eb6834", "#2a78d6", "#a3a29c"
 BLOCK_LABELS = {"block": "Block", "linear_block": "Linear-block"}
-CLASSIFIERS = [("minirocket", "MiniROCKET"), ("dtw", "1NN-DTW"), ("stat_rf", "Stat. features + RF")]
+CLASSIFIERS = [("minirocket", "MiniRocket-Ridge"), ("dtw", "1NN-DTW"), ("stat_rf", "Stat. features + RF")]
 
 
 def _style() -> None:
