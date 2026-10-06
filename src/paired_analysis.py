@@ -162,6 +162,26 @@ def summarize_datasets(values: pd.Series, n_bootstrap: int, seed: int) -> dict:
     }
 
 
+SLOPE_DECIMALS = 12
+
+
+def rate_slope(missing_rates, values) -> float:
+    """Least-squares slope of ``values`` per 1 percentage point of missingness.
+
+    The closed form is rounded to ``SLOPE_DECIMALS`` places. Count metrics
+    (selection error, selection change) have slopes on a coarse grid, so
+    slopes that are equal or zero in exact arithmetic must stay equal or zero
+    for the Wilcoxon test's ties and zero handling. Floating-point noise (about
+    1e-17, platform dependent) would otherwise break those ties and shift the
+    p-value between environments; rounding at 1e-12 removes the noise and
+    leaves balanced-accuracy slopes unchanged in practice.
+    """
+    x = np.asarray(missing_rates, dtype=float) * 100
+    y = np.asarray(values, dtype=float)
+    centred = x - x.mean()
+    return round(float(centred @ y / (centred @ centred)), SLOPE_DECIMALS)
+
+
 def holm(p_values: pd.Series) -> pd.Series:
     """Holm step-down adjustment for a family of p-values."""
     order = p_values.sort_values()
@@ -193,7 +213,7 @@ def paired_tables(pairs: pd.DataFrame, metrics: list[str], stratum: str,
     per_rate = pairs.groupby(["dataset", "missing_rate"])[metrics].mean().reset_index()
     slopes = per_rate.groupby("dataset").apply(
         lambda group: pd.Series({
-            metric: np.polyfit(group.missing_rate * 100, group[metric], 1)[0] for metric in metrics
+            metric: rate_slope(group.missing_rate, group[metric]) for metric in metrics
         }),
         include_groups=False,
     )

@@ -59,6 +59,30 @@ The cost is asymmetric (point test, BP vs PP: 1.84 pp, p = 7.4e-7; block test,
 PB vs BB: 0.44 pp, p = 0.20) and grows with the missing rate (−0.03 pp at 5% to
 2.46 pp at 30%; slope 0.091 pp per percentage point, p = 6.4e-8).
 
+### Revised trend analysis (`analysis_v2/`, 2026-10-06)
+
+`analysis/` is the original output and is kept unchanged. `analysis_v2/` was
+produced from the same input files after one change to `src.paired_analysis`:
+the per-dataset trend slope is now computed in closed form and rounded to 12
+decimals (`rate_slope`) instead of with `np.polyfit`. For count-based outcomes
+(selection error, selection change) many datasets have exactly equal or zero
+slopes, but `polyfit` added about 1e-17 of floating-point noise that split
+these ties and zeros, so the trend Wilcoxon test depended on the numerical
+library version. `scripts/compare_analysis_revisions.py` shows that only the
+two `*_rate_trend.csv` tables differ. Means, medians and CIs moved by less than
+1e-10, and two Wilcoxon results changed:
+
+| Trend (target-paired) | `analysis/` p | `analysis_v2/` p |
+| --- | --- | --- |
+| Selection error increase | 5.65e-4 (W = 153.5) | 5.75e-4 (W = 154.0) |
+| Selection changed | 3.25e-9 (W = 72.5) | 5.07e-9 (W = 64.0) |
+
+The source-paired selection-error trend changed identically. Neither value is
+reported above or in the paper; the balanced-accuracy trend (p = 6.4e-8) and
+every other table are identical. `requirements-lock.txt` records the analysis
+environment for `analysis_v2/`; the run environment was not recorded beyond
+aeon 1.6.0.
+
 ## Figures (`figures/`, PNG at 300 dpi and PDF)
 
 Produced by `src.plot_final_results`; all intervals are bootstrap CIs over datasets.

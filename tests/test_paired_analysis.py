@@ -8,6 +8,7 @@ from src.paired_analysis import (
     load_and_validate,
     pair_by_source,
     pair_by_target,
+    rate_slope,
     run_analysis,
 )
 
@@ -104,6 +105,28 @@ def test_output_must_not_be_the_checkpoint_directory(tmp_path):
     _write_results(tmp_path, CONFIG["datasets"])
     with pytest.raises(ValueError, match="separate directory"):
         run_analysis(tmp_path, CONFIG, tmp_path, allow_incomplete=False, n_bootstrap=50)
+
+
+RATES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
+
+
+def test_rate_slope_keeps_exact_zeros_and_ties_for_count_metrics():
+    # Each rate value is a count over 10 pairs, as for selection error/change.
+    # Contrast weights (-5, -3, -1, 1, 3, 5) give equal numerators for a and b,
+    # and zero numerators for flat and symmetric.
+    a = np.array([0, 0, 0, 0, 0, 1]) / 10
+    b = np.array([1, 0, 0, 0, 0, 2]) / 10
+    flat = np.array([3, 3, 3, 3, 3, 3]) / 10
+    symmetric = np.array([1, 0, 0, 0, 0, 1]) / 10
+    assert rate_slope(RATES, a) == rate_slope(RATES, b) == pytest.approx(5 / 1750)
+    assert rate_slope(RATES, flat) == 0.0
+    assert rate_slope(RATES, symmetric) == 0.0
+
+
+def test_rate_slope_matches_least_squares_for_continuous_values():
+    values = np.random.default_rng(1).random(6)
+    expected = np.polyfit(np.array(RATES) * 100, values, 1)[0]
+    assert rate_slope(RATES, values) == pytest.approx(expected, abs=1e-12)
 
 
 def test_holm_adjustment():

@@ -69,6 +69,24 @@ pp. The main finding is therefore not an artefact of the circular block
 construction; with linear blocks the mismatch cost is larger, and the
 block-test direction (PB vs BB) also becomes significant.
 
+### Revised trend analysis (`analysis_v2/`, 2026-10-06)
+
+`analysis/` is the original output and is kept unchanged. `analysis_v2/` uses
+the same inputs and the closed-form, 12-decimal trend slope described in
+`results/final_ucr64_v1_4/README.md`. Only the two `*_rate_trend.csv` tables
+differ (`scripts/compare_analysis_revisions.py`); means, medians and CIs moved
+by less than 1e-10, and these Wilcoxon results changed:
+
+| Trend | `analysis/` p | `analysis_v2/` p |
+| --- | --- | --- |
+| Selection error increase (target- and source-paired) | 8.03e-6 | 8.87e-6 |
+| Selection changed (target-paired) | 3.61e-8 | 4.24e-8 |
+| Regret increase (source-paired) | 7.39e-9 | 8.59e-9 |
+
+The source-paired regret trend now equals the target-paired balanced-accuracy
+trend, as it should, because the oracle is unchanged within a source pair. The
+reported trend (0.145, p = 8.6e-9) and all other tables are identical.
+
 ## Figures (`figures/`, PNG at 300 dpi and PDF)
 
 Produced by `src.plot_final_results`; all intervals are bootstrap CIs over
