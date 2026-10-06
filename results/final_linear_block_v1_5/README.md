@@ -32,9 +32,12 @@ conditions had a validation tie.
 
 `src.assemble_linear_block` added the main-study PP rows only after verifying,
 for all 64 datasets, that the run's point-side validation (PB) and test (BP)
-balanced accuracies equal the main study's. This confirms that point masks and
-fitted models are unchanged, and that `n_jobs` 24 versus 18 does not affect
-results. The assembled `raw_results.csv` (23,040 rows) and
+balanced accuracies equal the main study's. Recorded point-side balanced
+accuracies agree with the primary values for every candidate, dataset, seed,
+and rate within the assembly tolerance. This supports consistency of the two
+execution paths (including `n_jobs` 24 versus 18) at the metric level; it does
+not directly establish identity of mask arrays, predictions, or fitted
+estimator objects. The assembled `raw_results.csv` (23,040 rows) and
 `selection_results.csv` (7,680 rows) are the analysis input;
 `assembly_manifest.json` records the SHA-256 of both inputs.
 
@@ -53,7 +56,7 @@ signed-rank tests; Holm correction across rates. Positive = mismatch is worse.
 | Target-paired outcome | Linear block | Circular block (main study) |
 | --- | --- | --- |
 | Selected-model test BA lost (= regret increase) | **1.67 pp** (95% CI 1.23–2.14; 54 / 4 / 6 datasets worse / better / equal; p = 1.2e-10) | 1.14 pp (0.79–1.51; p = 1.8e-9) |
-| Selection error increase | **11.2 pp** (7.3–15.4; p = 1.2e-7) | 6.4 pp (3.7–9.4; p = 1.7e-5) |
+| Selection error increase | **11.2 pp** (7.3–15.4; p = 1.2e-7) | 6.4 pp (3.6–9.4; p = 1.7e-5) |
 | Point test: BP vs PP | **2.24 pp** (1.62–2.90; p = 3.2e-9) | 1.84 pp (1.23–2.50; p = 7.4e-7) |
 | Block test: PB vs BB | **1.10 pp** (0.45–1.81; p = 0.013) | 0.44 pp (−0.11–1.03; p = 0.20) |
 | At 5% / 30% missingness | −0.03 pp / **3.65 pp** | −0.03 pp / 2.46 pp |

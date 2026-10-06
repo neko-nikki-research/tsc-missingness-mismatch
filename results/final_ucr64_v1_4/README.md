@@ -53,7 +53,7 @@ Headline (target-paired, positive = mismatch is worse):
 | Outcome | Mean | 95% CI | Worse / better / equal | Wilcoxon p |
 | --- | --- | --- | --- | --- |
 | Selected-model test BA lost (= regret increase) | 1.14 pp | 0.79 to 1.51 | 49 / 7 / 8 | 1.8e-9 |
-| Selection error increase | 6.4 pp | 3.7 to 9.4 | 28 / 8 / 28 | 1.7e-5 |
+| Selection error increase | 6.4 pp | 3.6 to 9.4 | 28 / 8 / 28 | 1.7e-5 |
 
 The cost is asymmetric (point test, BP vs PP: 1.84 pp, p = 7.4e-7; block test,
 PB vs BB: 0.44 pp, p = 0.20) and grows with the missing rate (−0.03 pp at 5% to
