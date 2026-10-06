@@ -3,6 +3,7 @@
 ## A Controlled Empirical Study
 
 **Protocol version:** v1.5
+**Editorial clarification:** 2026-10-06
 **Project status:** Finalized
 **Project type:** Controlled empirical study
 **Primary task:** Univariate time-series classification
@@ -23,6 +24,10 @@ The primary experiment was finalized using 64 fixed UCR2015 univariate, equal-le
 ### v1.5
 
 A supplementary robustness analysis was added to replace circular contiguous block masking with non-wrapping linear contiguous block masking. The primary circular-block analysis, its estimand, and its statistical analysis remain unchanged. The v1.5 robustness analysis is reported separately and is not pooled with the primary analysis.
+
+### Editorial clarification: 2026-10-06
+
+This revision clarifies the documented v1.4 and v1.5 execution paths, classifier preprocessing and internal fitting rules, dataset exclusions, aggregation, and interpretation boundaries. It corrects the circular-block indexing example. It does not change the dataset set, masking distributions, candidate set, primary estimand, or frozen results. The numerical-stability follow-up in Section 15.5 is identified as an audit recommendation rather than an implemented change to the original analysis.
 
 ---
 
@@ -76,7 +81,7 @@ The primary experiment uses the following 64 fixed univariate, equal-length data
 
 This dataset list is fixed before formal result analysis.
 
-Twenty-one UCR2015 datasets with particularly large combinations of sample size and sequence length were excluded before formal analysis because 1-nearest-neighbour DTW was computationally impractical under the available local resources. These exclusions were made without reference to classifier performance, missingness patterns, or experimental outcomes.
+An initial resource-based screening omitted 21 UCR2015 datasets whose combinations of sample size and sequence length made 1-nearest-neighbour DTW computationally impractical under the available local resources. Four of these datasets were subsequently included as replacements for four unusable datasets in the initial selection, as described in Section 2.2. The final exclusions therefore comprise 17 datasets omitted for computational reasons and four that could not be loaded or split under the specified procedure. Neither screening nor replacement used classifier performance or missingness outcomes.
 
 ## 2.2 Dataset Preflight and Replacements
 
@@ -105,7 +110,7 @@ For each dataset and random seed, the official UCR training set is divided into:
 1. a complete training subset; and
 2. a held-out validation subset.
 
-The validation fraction is fixed at 25%.
+The target validation fraction is 25%; the realized fraction can differ slightly because instance counts are integers.
 
 The split is stratified by class label and uses random seeds
 
@@ -165,7 +170,7 @@ The masked series \(x^{mask}\) is obtained by replacing observations at position
 
 The original values at masked positions are not supplied to the imputation procedure. They are retained only in the underlying evaluation framework as the values that generated the masked input; they are never used as preprocessing information.
 
-For every dataset, seed, and missingness rate, validation and test masks are generated separately. The implementation uses seed offsets so that validation and test masks are generated independently while remaining deterministic.
+For every dataset, seed, and missingness rate, validation and test masks are generated separately using deterministic seed offsets: experimental seed + 1 for validation and experimental seed + 2 for test masking. For a fixed series-array shape, pattern, rate, and seed, mask generation is reproducible. Conditions with an unchanged validation or test pattern share the corresponding masked data. Mask placement does not depend on series values or class labels.
 
 All candidate classifiers within the same experimental cell receive the same validation and test masks.
 
@@ -219,7 +224,7 @@ $$
 Consequently, a block may cross the sequence boundary. For example, when \(T=20\) and \(k=5\), a valid block may be
 
 $$
-(18,19,20,1,2).
+(17,18,19,0,1).
 $$
 
 Circular placement gives every time point the same marginal probability of being included in a randomly positioned block of length \(k\).
@@ -240,7 +245,7 @@ $$
 
 To determine whether the main findings depend on the specific construction of circular block missingness, a separate robustness analysis uses non-wrapping linear contiguous blocks.
 
-In the linear-block condition, the masked interval must lie completely within the original sequence:
+In the linear-block condition, the masked interval must lie completely within the original sequence. Using zero-based indexing:
 
 $$
 M_L=\{s,s+1,\ldots,s+k-1\},
@@ -249,7 +254,7 @@ $$
 where
 
 $$
-s\sim\mathrm{Uniform}\{1,\ldots,T-k+1\}.
+s\sim\mathrm{Uniform}\{0,\ldots,T-k\}.
 $$
 
 A linear block therefore cannot cross the beginning or end of the sequence.
@@ -300,7 +305,7 @@ For each dataset, seed, and missingness rate:
 * the \(PP\) and \(PL\) conditions use the same point-validation mask generation rule;
 * the \(PP\) and \(LP\) conditions use the same point-test mask generation rule.
 
-The supplementary result set is assembled only after the reused \(PP\) rows have been verified against the point-side validation and test results generated by the new run. The assembled analysis contains the same four-condition structure as the primary analysis but is based on linear blocks for all conditions that involve block missingness.
+The supplementary result set is assembled only after point-side validation and test balanced accuracies generated by the new run have been checked against the corresponding primary values for every candidate, dataset, seed, and rate, using an assembly tolerance of 10^-12. This check compares recorded metrics; it does not directly compare mask arrays, prediction arrays, or fitted estimator objects. The assembled analysis contains the same four-condition structure as the primary analysis but is based on linear blocks for all conditions that involve block missingness.
 
 The robustness analysis is never pooled with the circular-block primary experiment.
 
@@ -338,7 +343,7 @@ For each experimental series, the protocol records:
 
 A boundary case occurs when \(k=1\). In this case, point and contiguous-block masking are distributionally equivalent because both select one time point. This case is treated as a non-discriminating boundary condition rather than evidence that the two missingness constructions differ.
 
-In particular, `ItalyPowerDemand` has \(k=1\) at the 5% nominal rate. The point and block mechanisms therefore have the same distribution in that condition, although their independently generated realized masks need not be identical.
+In particular, `ItalyPowerDemand` has \(k=1\) at the 5% nominal rate. The point and block mechanisms therefore have the same distribution in that condition, although their separately generated realized masks need not be identical.
 
 ---
 
@@ -361,6 +366,8 @@ It does not use:
 * other validation instances;
 * other test instances;
 * statistics estimated from the official test set.
+
+The project applies masking and interpolation to the arrays returned by the aeon loader without adding series normalization before or after masking. Classifier-specific feature scaling is part of the MiniROCKET pipeline described in Section 9.2.
 
 The preprocessing pipeline is therefore
 
@@ -392,13 +399,13 @@ $$
 k_{\mathrm{NN}}=1.
 $$
 
-No validation-based hyperparameter tuning is performed for this classifier.
+The implementation uses aeon's DTW defaults with no warping-window or Itakura constraint. No hyperparameter tuning is performed on the held-out validation subset for this classifier.
 
 ## 9.2 MiniROCKET-Ridge
 
 The second candidate uses MiniROCKET followed by a Ridge classifier.
 
-The number of MiniROCKET kernels is fixed at
+The configured MiniROCKET kernel-count parameter is fixed at
 
 $$
 10,000.
@@ -411,7 +418,7 @@ $$
 \{10^{-3},10^{-3+6/9},\ldots,10^3\}.
 $$
 
-This internal regularization selection is performed within the fitted training pipeline. The held-out validation labels and official test labels are not used for this internal fitting operation.
+The aeon 1.6.0 classifier applies `StandardScaler(with_mean=False)` to the transformed features before the linear classifier. Ridge regularization is selected within the complete fitting subset using `RidgeClassifierCV` with `cv=None` and `scoring=None`: the default efficient leave-one-out procedure and its negative-mean-squared-error criterion. The held-out validation labels and official test labels are not used for this internal fitting operation. Candidate definitions, the regularization grid, and internal fitting rules are fixed; the fitted regularization value can vary across training splits.
 
 The external validation set remains reserved for choosing among the three candidate pipelines.
 
@@ -448,7 +455,7 @@ No validation-based hyperparameter tuning is performed for this pipeline.
 
 For each dataset, seed, missingness rate, validation pattern, and target test pattern, each candidate classifier is fitted using only the complete training subset.
 
-Because the training subset remains unchanged across missingness rates and validation/test patterns, each candidate is fitted once per dataset seed and the fitted model is reused across all corresponding experimental conditions.
+Because the fitting subset remains unchanged across missingness rates and validation/test patterns, a fitted candidate can be reused across conditions. The original primary runner refitted candidates for each condition and introduced prediction caching after the first nine datasets. The supplementary runner and current implementation fit each candidate once per dataset and seed and reuse it across rates and patterns. These execution paths use the same fitting inputs, candidate specifications, and selection rule; their verification is described in Section 19.
 
 For each validation condition, predictions are produced on the masked and imputed validation subset.
 
@@ -498,7 +505,7 @@ For each dataset and random seed:
 1. Load the official UCR training and test sets.
 2. Validate that both sets are univariate, equal-length, and originally complete.
 3. Split the official training set into complete training and held-out validation subsets using the fixed stratified 25% validation split.
-4. Fit each of the three candidate classifiers once on the complete training subset.
+4. Fit the three candidate classifiers on the complete training subset using the execution path described in Sections 10 and 19.
 5. For each nominal missingness rate, generate the required validation and test masks.
 6. Impute the masked validation and test series independently using linear interpolation.
 7. Obtain validation predictions for each candidate classifier.
@@ -508,7 +515,7 @@ For each dataset and random seed:
 11. Compute the retrospective candidate-set test oracle.
 12. Record classification performance, selection, selection error, and regret.
 
-Validation predictions are independent of the target test pattern and are therefore reused across target conditions. Test predictions are independent of the validation pattern and are therefore reused across source conditions.
+Validation predictions do not depend on the target test pattern, and test predictions do not depend on the validation pattern. Where prediction caching is used, the corresponding predictions are reused across target or source conditions, as described in Sections 10 and 19.
 
 This prediction reuse is an implementation optimization that does not change the experimental design.
 
@@ -603,7 +610,7 @@ This analysis is secondary and does not serve as the primary estimate of validat
 
 Balanced accuracy is the primary classification-performance metric.
 
-For \(C\) classes,
+For the \(C\) classes represented in the evaluated ground-truth labels,
 
 $$
 BA
@@ -704,7 +711,7 @@ A change in classifier identity does not necessarily imply a difference in test 
 
 ## 15.1 Independent Unit
 
-The dataset is the independent experimental unit.
+The dataset is the analysis unit for cross-task inference. Independence and exchangeability are analysis assumptions: some included tasks belong to related families, and the analysis does not explicitly model that dependence.
 
 Seeds, missingness rates, and missingness-pattern conditions are repeated measurements within a dataset. They are therefore aggregated within dataset before across-dataset inference.
 
@@ -740,7 +747,7 @@ For each primary outcome, the following are reported:
 * number of datasets with no difference;
 * two-sided Wilcoxon signed-rank test.
 
-Bootstrap confidence intervals are generated by resampling datasets with replacement.
+Bootstrap confidence intervals are generated by resampling datasets with replacement. They describe variation under resampling of the included tasks, treating datasets as exchangeable units, rather than probability-sampling uncertainty for all TSC problems. Test instances and mask realizations are not separately resampled.
 
 The number of bootstrap resamples is
 
@@ -754,7 +761,7 @@ $$
 20260928.
 $$
 
-The Wilcoxon signed-rank test is applied to the dataset-level values rather than to the individual repeated measurements within datasets.
+The Wilcoxon signed-rank test is applied to dataset-level values rather than individual repeated measurements. The implemented call uses `alternative="two-sided"` and `zero_method="wilcox"`; `method` and `correction` are not explicitly overridden and therefore use the installed SciPy defaults. Exactly zero differences are omitted by the test. Direction counts use a separate tolerance of 10^-9, and that tolerance does not recode the test inputs. When all dataset-level values lie within that tolerance of zero, the implementation reports p = 1. The signed-rank test is not specifically a test of the arithmetic mean; a location-shift interpretation requires the usual assumptions about the difference distribution.
 
 No directional alternative is assumed for the primary hypothesis test.
 
@@ -764,7 +771,7 @@ The primary mismatch effect is also summarized separately at each of the six nom
 
 The six rate-specific Wilcoxon \(p\)-values are adjusted within each metric using the Holm procedure.
 
-Rate-specific tests are therefore corrected across the six missingness rates for a given metric, without pooling different metrics into a single family.
+Rate-specific tests are therefore corrected across the six missingness rates for a given signed metric. This is not a joint correction across the overall, stratum-specific, trend, and supplementary analyses. Selection-change frequencies are descriptive; generic signed-rank output for that nonnegative quantity is not interpreted as evidence of performance harm.
 
 ## 15.5 Missingness-Rate Trend
 
@@ -784,13 +791,15 @@ The six rate-specific observations are averaged within dataset across target-pat
 
 The resulting dataset-level slopes are then summarized across the 64 datasets using the same bootstrap and Wilcoxon framework.
 
+Editorial audit note (2026-10-06): reanalysis reproduced the reported balanced-accuracy trend tests, but small changes in secondary selection-error and selection-change trend p-values were observed across numerical environments. Floating-point least-squares estimates can separate theoretical ties or turn a theoretical zero into a very small nonzero slope. A numerical-stability improvement is recommended for any versioned reanalysis, with its treatment of theoretical ties and zero slopes documented explicitly. Such a change has not been applied to the frozen results in this editorial revision.
+
 ## 15.6 Sensitivity to Validation Ties
 
 A primary sensitivity analysis excludes any target-paired observation for which either side contains a validation tie.
 
 The overall target-paired analysis is then repeated using only pairs without validation ties.
 
-This analysis does not alter the definition of the primary estimand or the dataset-level independent unit.
+The primary estimand and dataset-level analysis unit remain unchanged. The tie-excluded summary is a sensitivity analysis restricted to the retained tie-free pairs, with dataset-level means recomputed from those pairs and datasets without retained pairs omitted. It therefore does not reproduce the original observation set or weighting.
 
 Several datasets have relatively small classes in their official training sets, and for some random seeds the held-out validation subset does not contain every class. These include `ECG5000`, `Mallat`, and `WordSynonyms`. These cases are retained because they arise from the prespecified stratified split and are handled by the same balanced-accuracy computation for all experimental conditions.
 
@@ -812,7 +821,9 @@ $$
 
 Classifier selection and oracle shares are summarized with equal weighting at the dataset level rather than by treating all repeated seed-condition rows as independent datasets.
 
-For each classifier, the study may also report the mean regret in conditions in which that classifier was selected.
+For each classifier, mean regret when selected is computed by first averaging its regret over the corresponding selected conditions within each dataset, then averaging equally over the datasets in which it was selected at least once.
+
+Analyses explicitly pooled over changed-selection target pairs are descriptive conditional summaries rather than dataset-level inferential tests. Each target-paired selection-change indicator is identical across the two target strata because selection depends only on validation.
 
 These analyses are descriptive and do not redefine the primary estimand.
 
@@ -849,9 +860,9 @@ The supplementary analysis reports:
 * results by missingness rate;
 * validation-tie sensitivity.
 
-The primary circular-block results are retained as the main estimates. Linear-block results are presented as an independent robustness analysis.
+The primary circular-block results are retained as the main estimates. Linear-block results are presented as a separate supplementary robustness analysis; the datasets and primary PP condition are shared with the primary experiment.
 
-The two block constructions are not pooled because they correspond to different mask-generating distributions.
+The two block constructions are not pooled because they correspond to different mask-generating distributions. The study does not perform a formal test of the difference between their effects. A significant effect under one construction and a nonsignificant effect under the other do not establish a statistically significant difference between constructions.
 
 The purpose of the linear-block analysis is not to establish linear blocks as a new primary experimental factor. It is to assess whether conclusions obtained under the circular contiguous-block construction persist when the construction is changed to a non-wrapping contiguous block.
 
@@ -871,13 +882,13 @@ Only validation balanced accuracy determines classifier selection.
 
 ### Test isolation
 
-Official test labels are never used for model selection or tuning. They are used only for post-selection evaluation and retrospective candidate-set oracle calculation.
+Official test labels are never used for model selection or tuning. They are used only for candidate evaluation and retrospective candidate-set oracle calculation. Their computational availability does not make them inputs to the validation-only selection rule.
 
 ### Shared masks
 
 All candidate classifiers within an experimental condition receive identical validation and test masks.
 
-### Independent validation and test masking
+### Separate validation and test masking
 
 Validation and test masks are generated separately using distinct seed offsets.
 
@@ -909,8 +920,8 @@ The formal experiments are implemented in Python using aeon 1.6.0, NumPy, pandas
 
 The primary main-study configuration fixes:
 
-* five seeds: 1–5;
-* six missingness rates: 0.05–0.30;
+* five seeds: 1, 2, 3, 4, 5;
+* six missingness rates: 0.05, 0.10, 0.15, 0.20, 0.25, 0.30;
 * validation size: 0.25;
 * imputer: linear;
 * classifiers: DTW, MiniROCKET, and statistical-feature Random Forest;
@@ -920,11 +931,15 @@ The primary main-study configuration fixes:
 
 The supplementary linear-block run uses the same scientific parameters and 24 jobs for computational parallelism. The parallelism setting is an implementation detail and is not treated as an experimental factor.
 
-Because training remains complete, each candidate classifier is fitted once per dataset seed and reused across rates and missingness patterns.
+The primary frozen results were generated by the original runner, which fitted candidates separately for each condition. Prediction caching was introduced after the first nine primary datasets. The supplementary runner and current implementation fit each candidate once per dataset and seed, reuse the fitted estimator across rates and patterns, and batch 1NN-DTW predictions through aeon's neighbour-search routine. The wrapper retains the distance calculation and nearest-neighbour tie rule.
 
-Within each missingness rate, validation predictions are reused across target patterns and test predictions are reused across source patterns.
+The repository includes a regression test comparing batched 1NN-DTW predictions with the aeon reference, including tied distances. Archive-level verification covers the validation- and test-score invariances in the first nine primary datasets and agreement of recorded point-side balanced accuracies across all candidates, datasets, seeds, and rates. These checks support consistency of the execution paths; metric agreement is not a direct comparison of every prediction array or fitted estimator object.
 
-The benchmark implementation stores both classifier-level raw results and condition-level selection results.
+The optimized implementation reuses validation predictions across target patterns and test predictions across source patterns within each missingness rate.
+
+The benchmark implementation stores both classifier-level raw results and condition-level selection results. Timing fields for reused fits and predictions are repeated per condition and must not be summed as additive wall-clock costs.
+
+The supplied requirements file pins aeon to 1.6.0 and specifies supported ranges for other dependencies. The supplied run manifests do not contain complete installed-package version snapshots. Exact historical versions should be recovered and documented where available; supported ranges alone do not uniquely reconstruct the original environment.
 
 ---
 
@@ -1025,7 +1040,11 @@ In particular, the results should not automatically be generalized to:
 * classifier candidates outside the three prespecified pipelines;
 * deployment settings in which the training distribution itself is affected by missingness.
 
-The candidate-set test oracle is a retrospective reference within the three prespecified classifiers. It is not a global oracle over all possible TSC algorithms.
+The candidate-set test oracle is the highest observed score among the three prespecified classifiers on a finite target test set. It is a retrospective evaluation reference, not a population-optimal method or a global oracle over all possible TSC algorithms. Selection error denotes observed candidate-set suboptimality beyond numerical tolerance, not a statistically established population-performance difference.
+
+An average mismatch effect close to zero does not imply that individual changed selections perform similarly. Positive and negative paired differences can offset each other. A source-paired regret increase is relative to a target-specific oracle and does not by itself imply a decrease in absolute test balanced accuracy.
+
+Associations involving validation-set size or candidate dominance are descriptive or mechanistic hypotheses unless tested directly by a corresponding experimental comparison.
 
 The circular-block construction is a controlled masking mechanism rather than a claim about a particular real-world missingness process.
 
@@ -1047,7 +1066,7 @@ BA_{matched}
 BA_{mismatched}.
 $$
 
-The primary independent unit is the dataset.
+The primary analysis unit is the dataset, with cross-dataset independence and exchangeability treated as analysis assumptions as described in Section 15.1.
 
 The primary experiment uses:
 
@@ -1062,6 +1081,6 @@ The primary experiment uses:
 * candidate-set test oracle and selection regret for post-hoc evaluation;
 * dataset-level bootstrap confidence intervals and Wilcoxon signed-rank tests.
 
-The supplementary v1.5 analysis replaces circular contiguous blocks with non-wrapping linear contiguous blocks while preserving the same scientific and statistical framework.
+The supplementary v1.5 analysis replaces circular contiguous block masking with non-wrapping linear contiguous block masking while preserving the same scientific and statistical framework.
 
-The central object of inference is therefore not the standalone effect of missing values on classifier accuracy, but the effect of **validation–deployment missingness-pattern mismatch on validation-based method selection and its resulting deployment performance**.
+The central object of inference is therefore not the standalone effect of missing values on classifier accuracy, but the effect of **validation-deployment missingness-pattern mismatch on validation-based method selection and its resulting deployment performance**.
