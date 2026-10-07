@@ -29,6 +29,10 @@ A supplementary robustness analysis was added to replace circular contiguous blo
 
 This revision clarifies the documented v1.4 and v1.5 execution paths, classifier preprocessing and internal fitting rules, dataset exclusions, aggregation, and interpretation boundaries. It corrects the circular-block indexing example. It does not change the dataset set, masking distributions, candidate set, primary estimand, or frozen results. The numerical-stability follow-up in Section 15.5 is identified as an audit recommendation rather than an implemented change to the original analysis.
 
+### Versioned reanalysis: 2026-10-07
+
+The numerical-stability follow-up recommended in Section 15.5 was implemented as a versioned reanalysis (`analysis_v2/`) of the unchanged frozen result files; the original `analysis/` outputs are retained. Trend slopes are computed in closed form, and dataset-level values and slopes are rounded to 12 decimal places before they are summarized, so that values that are equal or zero in exact arithmetic are not separated by floating-point error. Means, intervals, and direction counts are unchanged beyond 10^-12. The affected Wilcoxon results, including two reported Holm-adjusted rate-specific \(p\)-values that changed in the second significant digit, are listed in the result-set READMEs; no conclusion changed. Post hoc sensitivity checks reported with the results are reproduced by `scripts/post_hoc_checks.py` and are not part of the prespecified analysis.
+
 ---
 
 # 1. Research Question
@@ -761,7 +765,7 @@ $$
 20260928.
 $$
 
-The Wilcoxon signed-rank test is applied to dataset-level values rather than individual repeated measurements. The implemented call uses `alternative="two-sided"` and `zero_method="wilcox"`; `method` and `correction` are not explicitly overridden and therefore use the installed SciPy defaults. Exactly zero differences are omitted by the test. Direction counts use a separate tolerance of 10^-9, and that tolerance does not recode the test inputs. When all dataset-level values lie within that tolerance of zero, the implementation reports p = 1. The signed-rank test is not specifically a test of the arithmetic mean; a location-shift interpretation requires the usual assumptions about the difference distribution.
+The Wilcoxon signed-rank test is applied to dataset-level values rather than individual repeated measurements. The implemented call uses `alternative="two-sided"` and `zero_method="wilcox"`; `method` and `correction` are not explicitly overridden and therefore use the installed SciPy defaults. Exactly zero differences are omitted by the test. In the versioned reanalysis of 2026-10-07, dataset-level values are rounded to 12 decimal places before the test, so that values that are zero in exact arithmetic are omitted as zeros rather than ranked as floating-point residues. Direction counts use a separate tolerance of 10^-9, and that tolerance does not otherwise recode the test inputs. When all dataset-level values lie within that tolerance of zero, the implementation reports p = 1. The signed-rank test is not specifically a test of the arithmetic mean; a location-shift interpretation requires the usual assumptions about the difference distribution.
 
 No directional alternative is assumed for the primary hypothesis test.
 
@@ -792,6 +796,8 @@ The six rate-specific observations are averaged within dataset across target-pat
 The resulting dataset-level slopes are then summarized across the 64 datasets using the same bootstrap and Wilcoxon framework.
 
 Editorial audit note (2026-10-06): reanalysis reproduced the reported balanced-accuracy trend tests, but small changes in secondary selection-error and selection-change trend p-values were observed across numerical environments. Floating-point least-squares estimates can separate theoretical ties or turn a theoretical zero into a very small nonzero slope. A numerical-stability improvement is recommended for any versioned reanalysis, with its treatment of theoretical ties and zero slopes documented explicitly. Such a change has not been applied to the frozen results in this editorial revision.
+
+Implementation note (2026-10-07): the recommended change was implemented in the versioned reanalysis described in the revision history. Slopes are computed in closed form and rounded to 12 decimal places; the frozen result files and the original analysis outputs are unchanged.
 
 ## 15.6 Sensitivity to Validation Ties
 

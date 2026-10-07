@@ -107,5 +107,5 @@ datasets.
    summarised separately and shown side by side; they are not pooled.
 
 In figures 1–4, B denotes the linear block and each figure carries that
-footnote. Figure 5 shows the point-test cost is nearly the same under both
-constructions, while the block-test cost is larger with linear blocks.
+footnote. Figure 5 shows that the two constructions differ more for
+block-masked tests (1.10 vs 0.44 pp) than for point-masked tests (2.24 vs 1.84 pp).
