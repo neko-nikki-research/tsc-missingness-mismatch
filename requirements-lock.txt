@@ -1,4 +1,4 @@
-# Exact environment used to produce results/*/analysis_v2/ on 2026-10-06
+# Exact environment used to produce results/*/analysis_v2/ on 2026-10-07
 # (Python 3.12.10, Windows 11). Generated with `pip freeze`.
 #
 # This is the analysis environment only. The full package environments of the

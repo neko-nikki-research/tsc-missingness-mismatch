@@ -60,29 +60,38 @@ The cost is asymmetric (point test, BP vs PP: 1.84 pp, p = 7.4e-7; block test,
 PB vs BB: 0.44 pp, p = 0.20) and grows with the missing rate (−0.03 pp at 5% to
 2.46 pp at 30%; slope 0.091 pp per percentage point, p = 6.4e-8).
 
-### Revised trend analysis (`analysis_v2/`, 2026-10-06)
+### Revised analysis (`analysis_v2/`, 2026-10-06 and 2026-10-07)
 
 `analysis/` is the original output and is kept unchanged. `analysis_v2/` was
-produced from the same input files after one change to `src.paired_analysis`:
-the per-dataset trend slope is now computed in closed form and rounded to 12
-decimals (`rate_slope`) instead of with `np.polyfit`. For count-based outcomes
-(selection error, selection change) many datasets have exactly equal or zero
-slopes, but `polyfit` added about 1e-17 of floating-point noise that split
-these ties and zeros, so the trend Wilcoxon test depended on the numerical
-library version. `scripts/compare_analysis_revisions.py` shows that only the
-two `*_rate_trend.csv` tables differ. Means, medians and CIs moved by less than
-1e-10, and two Wilcoxon results changed:
+produced from the same input files after two numerical changes to
+`src.paired_analysis`, and the paper reports `analysis_v2/`:
 
-| Trend (target-paired) | `analysis/` p | `analysis_v2/` p |
+1. The per-dataset trend slope is computed in closed form (`rate_slope`)
+   instead of with `np.polyfit`.
+2. Dataset-level values and slopes are rounded to 12 decimals (`DECIMALS`)
+   before they are summarized.
+
+Values that are equal or zero in exact arithmetic (slopes of count outcomes,
+or a dataset whose paired differences cancel) otherwise carried about 1e-17
+of floating-point noise. The direction counts already treated such values as
+zero (tolerance 1e-9), but the Wilcoxon test ranked them, so its ties, zeros
+and p-values depended on the numerical library. `scripts/compare_analysis_revisions.py`
+shows that means, medians and CIs moved by less than 1e-12 and direction
+counts did not change. These Wilcoxon results changed:
+
+| Target-paired result | `analysis/` p | `analysis_v2/` p |
 | --- | --- | --- |
-| Selection error increase | 5.65e-4 (W = 153.5) | 5.75e-4 (W = 154.0) |
-| Selection changed | 3.25e-9 (W = 72.5) | 5.07e-9 (W = 64.0) |
+| BA loss at 5%, Holm-adjusted | 0.793 | 0.800 |
+| BA loss at 25%, Holm-adjusted | 9.54e-6 | 9.60e-6 |
+| Selection-error trend | 5.65e-4 | 5.75e-4 |
+| Selection-change trend | 3.25e-9 | 5.07e-9 |
 
-The source-paired selection-error trend changed identically. Neither value is
-reported above or in the paper; the balanced-accuracy trend (p = 6.4e-8) and
-every other table are identical. `requirements-lock.txt` records the analysis
-environment for `analysis_v2/`; the run environment was not recorded beyond
-aeon 1.6.0.
+The corresponding source-paired rows changed in the same way. All other
+reported p-values, including the balanced-accuracy trend (p = 6.4e-8), are
+unchanged, and no conclusion changes. `analysis_v2/tables/post_hoc_checks.csv`
+(from `scripts/post_hoc_checks.py`) holds the post hoc checks reported in the
+paper. `requirements-lock.txt` records the analysis environment for
+`analysis_v2/`; the run environment was not recorded beyond aeon 1.6.0.
 
 ## Figures (`figures/`, PNG at 300 dpi and PDF)
 

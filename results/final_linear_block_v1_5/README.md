@@ -69,23 +69,29 @@ pp. The main finding is therefore not an artefact of the circular block
 construction; with linear blocks the mismatch cost is larger, and the
 block-test direction (PB vs BB) also becomes significant.
 
-### Revised trend analysis (`analysis_v2/`, 2026-10-06)
+### Revised analysis (`analysis_v2/`, 2026-10-06 and 2026-10-07)
 
 `analysis/` is the original output and is kept unchanged. `analysis_v2/` uses
-the same inputs and the closed-form, 12-decimal trend slope described in
-`results/final_ucr64_v1_4/README.md`. Only the two `*_rate_trend.csv` tables
-differ (`scripts/compare_analysis_revisions.py`); means, medians and CIs moved
-by less than 1e-10, and these Wilcoxon results changed:
+the same inputs and the two numerical changes described in
+`results/final_ucr64_v1_4/README.md` (closed-form trend slopes; dataset-level
+values rounded to 12 decimals before they are summarized). Means, medians and
+CIs moved by less than 1e-12 and direction counts did not change. These
+Wilcoxon results changed (`scripts/compare_analysis_revisions.py`):
 
-| Trend | `analysis/` p | `analysis_v2/` p |
+| Result | `analysis/` p | `analysis_v2/` p |
 | --- | --- | --- |
-| Selection error increase (target- and source-paired) | 8.03e-6 | 8.87e-6 |
-| Selection changed (target-paired) | 3.61e-8 | 4.24e-8 |
-| Regret increase (source-paired) | 7.39e-9 | 8.59e-9 |
+| BA loss at 10%, Holm-adjusted (target-paired) | 0.030 | 0.028 |
+| BA loss at 5%, Holm-adjusted (target-paired) | 0.583 | 0.586 |
+| Selection-error trend (target- and source-paired) | 8.03e-6 | 8.87e-6 |
+| Selection-change trend (target-paired) | 3.61e-8 | 4.24e-8 |
+| Regret trend (source-paired) | 7.39e-9 | 8.59e-9 |
 
-The source-paired regret trend now equals the target-paired balanced-accuracy
-trend, as it should, because the oracle is unchanged within a source pair. The
-reported trend (0.145, p = 8.6e-9) and all other tables are identical.
+Smaller changes in other source-paired rows are listed by the comparison
+script. The source-paired regret trend now equals the target-paired
+balanced-accuracy trend, as it should, because the oracle is unchanged within
+a source pair. The reported results (trend 0.145, p = 8.6e-9; significance
+from 10% upward) are unchanged. `analysis_v2/tables/post_hoc_checks.csv` holds
+the post hoc checks.
 
 ## Figures (`figures/`, PNG at 300 dpi and PDF)
 

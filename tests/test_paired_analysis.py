@@ -10,6 +10,7 @@ from src.paired_analysis import (
     pair_by_target,
     rate_slope,
     run_analysis,
+    summarize_datasets,
 )
 
 CONFIG = {
@@ -105,6 +106,25 @@ def test_output_must_not_be_the_checkpoint_directory(tmp_path):
     _write_results(tmp_path, CONFIG["datasets"])
     with pytest.raises(ValueError, match="separate directory"):
         run_analysis(tmp_path, CONFIG, tmp_path, allow_incomplete=False, n_bootstrap=50)
+
+
+def test_result_keys_must_match_the_configured_design(tmp_path):
+    _write_results(tmp_path, CONFIG["datasets"])
+    # Same number of rates, so the row counts agree, but 0.2 is not configured.
+    wrong_rates = CONFIG | {"missing_rates": [0.1, 0.3]}
+    with pytest.raises(ValueError, match="configured seeds, rates"):
+        load_and_validate(tmp_path, wrong_rates)
+
+
+def test_floating_point_noise_counts_as_zero_in_the_test():
+    exact = pd.Series([0.0, 0.01, 0.02, -0.005, 0.03, 0.015])
+    noisy = exact.copy()
+    noisy[0] = 1e-17  # differences that cancel in exact arithmetic
+    a = summarize_datasets(exact, n_bootstrap=100, seed=0)
+    b = summarize_datasets(noisy, n_bootstrap=100, seed=0)
+    assert a["wilcoxon_p_two_sided"] == b["wilcoxon_p_two_sided"]
+    assert a["wilcoxon_statistic"] == b["wilcoxon_statistic"]
+    assert b["n_no_difference"] == 1
 
 
 RATES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]

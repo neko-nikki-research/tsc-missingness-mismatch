@@ -17,6 +17,7 @@ worse":
 """
 
 import argparse
+from itertools import product
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +30,12 @@ from src.evaluation import selection_summary
 CONDITION_KEYS = ["dataset", "seed", "missing_rate", "imputer"]
 SELECTION_KEYS = CONDITION_KEYS + ["source_pattern", "target_pattern"]
 TOLERANCE = 1e-9
+# Dataset-level values and slopes are rounded to this many decimals before
+# they are summarized. Values that are equal or zero in exact arithmetic
+# (e.g. a dataset whose paired differences cancel) otherwise carry about
+# 1e-17 of platform-dependent floating-point noise, which changes the
+# Wilcoxon test's ties and zero handling.
+DECIMALS = 12
 
 
 def load_and_validate(results_dir: Path, config: dict, allow_incomplete: bool = False):
@@ -65,6 +72,14 @@ def load_and_validate(results_dir: Path, config: dict, allow_incomplete: bool = 
     missing = [dataset for dataset in config["datasets"] if dataset not in counts.index]
     if missing and not allow_incomplete:
         raise ValueError(f"{len(missing)} configured datasets have no results yet: {missing}")
+    # Counts alone would accept a wrong seed, rate or pattern in place of a
+    # configured one, so the keys must be exactly the configured design.
+    expected = set(product(
+        counts.index, config["seeds"], config["missing_rates"], config["imputers"],
+        config["source_patterns"], config["target_patterns"],
+    ))
+    if set(selection[SELECTION_KEYS].itertuples(index=False, name=None)) != expected:
+        raise ValueError("Result keys do not match the configured seeds, rates, imputers and patterns")
 
     # Recompute selection, oracle, error and regret from the raw rows.
     recomputed = pd.DataFrame(
@@ -140,7 +155,7 @@ def pair_by_source(selection: pd.DataFrame) -> pd.DataFrame:
 
 def summarize_datasets(values: pd.Series, n_bootstrap: int, seed: int) -> dict:
     """Summarize one value per dataset: mean, bootstrap CI and Wilcoxon test."""
-    values = values.to_numpy(dtype=float)
+    values = np.round(values.to_numpy(dtype=float), DECIMALS)
     rng = np.random.default_rng(seed)
     resampled = values[rng.integers(0, len(values), size=(n_bootstrap, len(values)))].mean(axis=1)
     nonzero = np.abs(values) > TOLERANCE
@@ -162,24 +177,18 @@ def summarize_datasets(values: pd.Series, n_bootstrap: int, seed: int) -> dict:
     }
 
 
-SLOPE_DECIMALS = 12
-
-
 def rate_slope(missing_rates, values) -> float:
     """Least-squares slope of ``values`` per 1 percentage point of missingness.
 
-    The closed form is rounded to ``SLOPE_DECIMALS`` places. Count metrics
+    The closed form is rounded to ``DECIMALS`` places. Count metrics
     (selection error, selection change) have slopes on a coarse grid, so
     slopes that are equal or zero in exact arithmetic must stay equal or zero
-    for the Wilcoxon test's ties and zero handling. Floating-point noise (about
-    1e-17, platform dependent) would otherwise break those ties and shift the
-    p-value between environments; rounding at 1e-12 removes the noise and
-    leaves balanced-accuracy slopes unchanged in practice.
+    for the Wilcoxon test's ties and zero handling; see ``DECIMALS``.
     """
     x = np.asarray(missing_rates, dtype=float) * 100
     y = np.asarray(values, dtype=float)
     centred = x - x.mean()
-    return round(float(centred @ y / (centred @ centred)), SLOPE_DECIMALS)
+    return round(float(centred @ y / (centred @ centred)), DECIMALS)
 
 
 def holm(p_values: pd.Series) -> pd.Series:
