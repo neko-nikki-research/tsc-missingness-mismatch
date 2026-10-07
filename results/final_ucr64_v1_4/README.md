@@ -26,8 +26,9 @@ pattern, as the design requires. 16.7% of conditions had a validation tie,
 broken by the validation-only deterministic rule.
 
 The first nine datasets (Adiac to Computers) were produced before prediction
-caching was added; their raw rows show the same determinism, so both code
-versions produce identical results.
+caching was added; their raw rows satisfy the same invariances. This shows that
+each version is internally consistent; it does not by itself establish that the
+two code versions produce identical outputs.
 
 ### Checksums
 

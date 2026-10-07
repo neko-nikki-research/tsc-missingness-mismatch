@@ -23,6 +23,18 @@ The linear-block results are a supplementary sensitivity analysis. They are
 reported separately and must never be pooled with the circular-block main
 study.
 
+## Dataset inventory
+
+`dataset_inventory.csv` (from `scripts/dataset_inventory.py`, 2026-10-07)
+records, for each of the 64 datasets, the file aeon 1.6.0 reads (4 bundled, 60
+from the download cache), its SHA-256 and modification time, train/test sizes,
+series length, class counts, and for each seed a SHA-256 of the validation
+indices. It was made after the runs, not during them: the data files were last
+modified on 2026-09-21 to 2026-09-23, before the main run's first checkpoint, but
+the run manifests do not record file hashes. Validation subsets lack one class
+in 13 of the 320 dataset-seed splits (ECG5000 seeds 2-4; Mallat and
+WordSynonyms, all seeds); every fitting subset contains all classes.
+
 ## Interim checkpoints
 
 Frozen during the main-study run so the PR could be reviewed before all 64
