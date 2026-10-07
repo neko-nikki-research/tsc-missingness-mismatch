@@ -201,6 +201,12 @@ def run_config(
                 # not depend on the target pattern, nor test predictions on the
                 # source pattern, so each is computed once.
                 validation_results, test_results = {}, {}
+                # Mask seeds are seed + 1 (validation) and seed + 2 (test), so the
+                # validation masks of seed s and the test masks of seed s - 1 come
+                # from the same random stream. They mask different series, so
+                # nothing leaks, but mask draws are not independent across
+                # seeds. Kept unchanged to reproduce the archived results; a new
+                # study should derive independent streams with np.random.SeedSequence.
                 for source_pattern in sources:
                     X_val_masked, val_mask = apply_mask(X_val, source_pattern, missing_rate, seed + 1)
                     for imputer_name in config["imputers"]:

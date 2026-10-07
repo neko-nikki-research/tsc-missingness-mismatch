@@ -19,10 +19,14 @@ def calculate_classification_metrics(y_true, y_pred) -> dict:
 
 
 def _validation_tie_seed(row: dict) -> int:
-    """Derive a stable seed from validation-side information only."""
+    """Derive a stable seed from validation-side information only.
+
+    Fields are converted to built-in types first: the seed hashes their repr,
+    and NumPy 2 writes a NumPy scalar as ``np.float64(0.1)`` rather than ``0.1``.
+    """
     fields = (
-        row["dataset"], row["seed"], row["missing_rate"],
-        row["source_pattern"], row["imputer"],
+        str(row["dataset"]), int(row["seed"]), float(row["missing_rate"]),
+        str(row["source_pattern"]), str(row["imputer"]),
     )
     digest = hashlib.blake2b(repr(fields).encode("utf-8"), digest_size=8).digest()
     return int.from_bytes(digest, byteorder="little")
