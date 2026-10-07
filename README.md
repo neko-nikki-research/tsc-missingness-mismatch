@@ -98,8 +98,9 @@ only on pattern, rate and seed, so BP and BB share one linear-block validation
 mask, PB and BB share one linear-block test mask, and point masks are generated
 exactly as in the main study. `src.assemble_linear_block` adds the main-study PP
 rows only after verifying that the new run's point-side validation (PB) and test
-(BP) balanced accuracies equal the main study's, i.e. that the point masks and
-fitted models are unchanged.
+(BP) balanced accuracies equal the main study's. This checks agreement at the
+metric level; it does not directly establish that the mask arrays, predictions
+or fitted models are identical.
 
 The raw output uses only explicit metric names: `val_balanced_accuracy`,
 `test_balanced_accuracy`, `selected_test_balanced_accuracy`, and
