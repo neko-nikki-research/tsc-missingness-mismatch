@@ -1,4 +1,4 @@
-# Linear-block robustness results — protocol v1.5 section 5.1
+# Linear-block robustness results: protocol v1.5 section 5.1
 
 Supplementary sensitivity analysis of the main study. The **only** change is
 that block missingness is a non-wrapping linear contiguous block instead of the
@@ -98,11 +98,11 @@ the post hoc checks.
 Produced by `src.plot_final_results`; all intervals are bootstrap CIs over
 datasets.
 
-1. `fig1_mismatch_cost_by_rate` — target-paired cost by missing rate.
-2. `fig2_conditions_by_rate` — regret and selection error for PP, PB, BP, BB.
-3. `fig3_per_dataset_effect` — dataset-level mean cost for all 64 datasets.
-4. `fig4_classifier_selection` — which classifier is selected vs. best on test.
-5. `fig5_circular_vs_linear_block` — target-paired cost under circular (main
+1. `fig1_mismatch_cost_by_rate`: target-paired cost by missing rate.
+2. `fig2_conditions_by_rate`: regret and selection error for PP, PB, BP, BB.
+3. `fig3_per_dataset_effect`: dataset-level mean cost for all 64 datasets.
+4. `fig4_classifier_selection`: which classifier is selected vs. best on test.
+5. `fig5_circular_vs_linear_block`: target-paired cost under circular (main
    study) and linear (this analysis) blocks, by test pattern. Each analysis is
    summarised separately and shown side by side; they are not pooled.
 

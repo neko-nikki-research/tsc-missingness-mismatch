@@ -1,4 +1,4 @@
-# Final UCR64 results — protocol v1.4 main study
+# Final UCR64 results: protocol v1.4 main study
 
 Complete results of the main experiment in `PROTOCOL.md`, copied unchanged from
 the run directory `results/main_protocol_ucr64_v1_4/` after the benchmark
@@ -97,10 +97,10 @@ paper. `requirements-lock.txt` records the analysis environment for
 
 Produced by `src.plot_final_results`; all intervals are bootstrap CIs over datasets.
 
-1. `fig1_mismatch_cost_by_rate` — target-paired cost by missing rate.
-2. `fig2_conditions_by_rate` — regret and selection error for PP, PB, BP, BB.
-3. `fig3_per_dataset_effect` — dataset-level mean cost for all 64 datasets.
-4. `fig4_classifier_selection` — which classifier is selected vs. best on test.
+1. `fig1_mismatch_cost_by_rate`: target-paired cost by missing rate.
+2. `fig2_conditions_by_rate`: regret and selection error for PP, PB, BP, BB.
+3. `fig3_per_dataset_effect`: dataset-level mean cost for all 64 datasets.
+4. `fig4_classifier_selection`: which classifier is selected vs. best on test.
 
 The supplementary linear-block analysis (`PROTOCOL.md` section 5.1) is not part
 of these results; it is reported separately in `results/final_linear_block_v1_5/`.
