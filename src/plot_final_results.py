@@ -93,7 +93,7 @@ def _block_note(block: str) -> str:
     """Footnote naming the block construction when it is not the main study's."""
     if block == "block":
         return ""
-    return " B = non-wrapping linear block (supplementary robustness analysis; PP reused from the main study)."
+    return " B = non-wrapping linear block (supplementary experiment; PP reused from the main study)."
 
 
 def _save(figure, figures_dir: Path, name: str) -> None:
@@ -107,7 +107,7 @@ def plot_mismatch_by_rate(pairs, figures_dir, n_bootstrap, seed, block="block"):
     metrics = [("delta_selected_test_ba", "Test BA lost by mismatched validation (pp)",
                 "A  Deployment performance (= regret increase)"),
                ("delta_selection_error", "Increase in selection error (pp)",
-                "B  Probability of choosing a sub-optimal classifier")]
+                "B  Increase in selection-error rate")]
     figure, axes = plt.subplots(1, 2, figsize=(10, 3.9), sharex=True)
     for axis, (metric, ylabel, title) in zip(axes, metrics):
         by_stratum = pairs.groupby(["dataset", "missing_rate", "target_pattern"])[metric].mean().reset_index()
@@ -120,7 +120,7 @@ def plot_mismatch_by_rate(pairs, figures_dir, n_bootstrap, seed, block="block"):
                         f"{BLOCK_LABELS.get(block, block)} test: PB vs BB", "s")
         _line_with_band(axis, _summaries(pooled, ["missing_rate"], metric, n_bootstrap, seed),
                         INK, "Both targets", "D", linestyle="--")
-        axis.set(title=title, xlabel="Missing rate (%)", ylabel=ylabel, xticks=[5, 10, 15, 20, 25, 30])
+        axis.set(title=title, xlabel="Missingness rate (%)", ylabel=ylabel, xticks=[5, 10, 15, 20, 25, 30])
         axis.set_xlim(3.5, 38)
         _spread_end_labels(axis)
     handles, labels = axes[0].get_legend_handles_labels()
@@ -145,7 +145,7 @@ def plot_conditions_by_rate(selection, figures_dir, n_bootstrap, seed, block="bl
             group = per_dataset[(per_dataset.source_pattern == source) & (per_dataset.target_pattern == target)]
             _line_with_band(axis, _summaries(group, ["missing_rate"], metric, n_bootstrap, seed),
                             color, name, marker, linestyle="-" if source == target else "--")
-        axis.set(title=title, xlabel="Missing rate (%)", ylabel=ylabel, xticks=[5, 10, 15, 20, 25, 30])
+        axis.set(title=title, xlabel="Missingness rate (%)", ylabel=ylabel, xticks=[5, 10, 15, 20, 25, 30])
         axis.set_xlim(3.5, 34)
         axis.set_ylim(bottom=0)
         _spread_end_labels(axis)
@@ -223,10 +223,10 @@ def plot_block_comparison(main_pairs, robustness_pairs, figures_dir, n_bootstrap
     metric = "delta_selected_test_ba"
     series = [(main_pairs, "block", SERIES[0], "Circular block (main study)", "Circular", "o"),
               (robustness_pairs, block, SERIES[1],
-               f"{BLOCK_LABELS.get(block, block)} (robustness analysis)", "Linear", "s")]
+               f"{BLOCK_LABELS.get(block, block)} (supplementary experiment)", "Linear", "s")]
     panels = [("point", "A  Point test: BP vs PP"), ("block", "B  Block test: PB vs BB"),
               (None, "C  Both targets")]
-    figure, axes = plt.subplots(1, 3, figsize=(13, 3.9), sharex=True, sharey=True)
+    figure, axes = plt.subplots(1, 3, figsize=(10.5, 3.6), sharex=True, sharey=True)
     for axis, (target, title) in zip(axes, panels):
         axis.axhline(0, color=INK_2, linewidth=1)
         for pairs, block_name, color, label, end_text, marker in series:
@@ -237,7 +237,7 @@ def plot_block_comparison(main_pairs, robustness_pairs, figures_dir, n_bootstrap
             per_dataset = subset.groupby(["dataset", "missing_rate"])[metric].mean().reset_index()
             _line_with_band(axis, _summaries(per_dataset, ["missing_rate"], metric, n_bootstrap, seed),
                             color, label, marker, end_text=end_text)
-        axis.set(title=title, xlabel="Missing rate (%)", xticks=[5, 10, 15, 20, 25, 30])
+        axis.set(title=title, xlabel="Missingness rate (%)", xticks=[5, 10, 15, 20, 25, 30])
         axis.set_xlim(3.5, 35)
         axis.label_outer()
     axes[0].set_ylabel("Test BA lost by mismatched validation (pp)")
