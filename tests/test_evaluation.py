@@ -62,3 +62,14 @@ def test_test_oracle_tie_is_not_an_artificial_selection_error():
     assert summary["oracle_classifier"] == "dtw|minirocket"
     assert summary["n_oracle_ties"] == 2
     assert summary["selection_error"] is False
+
+
+def test_tie_seed_is_fixed_and_independent_of_numpy_scalar_types():
+    from src.evaluation import _validation_tie_seed
+
+    native = {"dataset": "Coffee", "seed": 3, "missing_rate": 0.1,
+              "source_pattern": "block", "imputer": "linear"}
+    numpy_typed = native | {"seed": np.int64(3), "missing_rate": np.float64(0.1)}
+    # Value used by the archived runs; changing it would change tie-breaking.
+    assert _validation_tie_seed(native) == 3064225657644206821
+    assert _validation_tie_seed(numpy_typed) == 3064225657644206821

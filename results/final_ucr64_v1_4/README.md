@@ -1,4 +1,4 @@
-# Final UCR64 results — protocol v1.4 main study
+# Final UCR64 results: protocol v1.4 main study
 
 Complete results of the main experiment in `PROTOCOL.md`, copied unchanged from
 the run directory `results/main_protocol_ucr64_v1_4/` after the benchmark
@@ -26,8 +26,9 @@ pattern, as the design requires. 16.7% of conditions had a validation tie,
 broken by the validation-only deterministic rule.
 
 The first nine datasets (Adiac to Computers) were produced before prediction
-caching was added; their raw rows show the same determinism, so both code
-versions produce identical results.
+caching was added; their raw rows satisfy the same invariances. This shows that
+each version is internally consistent; it does not by itself establish that the
+two code versions produce identical outputs.
 
 ### Checksums
 
@@ -53,20 +54,53 @@ Headline (target-paired, positive = mismatch is worse):
 | Outcome | Mean | 95% CI | Worse / better / equal | Wilcoxon p |
 | --- | --- | --- | --- | --- |
 | Selected-model test BA lost (= regret increase) | 1.14 pp | 0.79 to 1.51 | 49 / 7 / 8 | 1.8e-9 |
-| Selection error increase | 6.4 pp | 3.7 to 9.4 | 28 / 8 / 28 | 1.7e-5 |
+| Selection error increase | 6.4 pp | 3.6 to 9.4 | 28 / 8 / 28 | 1.7e-5 |
 
 The cost is asymmetric (point test, BP vs PP: 1.84 pp, p = 7.4e-7; block test,
 PB vs BB: 0.44 pp, p = 0.20) and grows with the missing rate (−0.03 pp at 5% to
 2.46 pp at 30%; slope 0.091 pp per percentage point, p = 6.4e-8).
 
+### Revised analysis (`analysis_v2/`, 2026-10-06 and 2026-10-07)
+
+`analysis/` is the original output and is kept unchanged. `analysis_v2/` was
+produced from the same input files after two numerical changes to
+`src.paired_analysis`, and the paper reports `analysis_v2/`:
+
+1. The per-dataset trend slope is computed in closed form (`rate_slope`)
+   instead of with `np.polyfit`.
+2. Dataset-level values and slopes are rounded to 12 decimals (`DECIMALS`)
+   before they are summarized.
+
+Values that are equal or zero in exact arithmetic (slopes of count outcomes,
+or a dataset whose paired differences cancel) otherwise carried about 1e-17
+of floating-point noise. The direction counts already treated such values as
+zero (tolerance 1e-9), but the Wilcoxon test ranked them, so its ties, zeros
+and p-values depended on the numerical library. `scripts/compare_analysis_revisions.py`
+shows that means, medians and CIs moved by less than 1e-12 and direction
+counts did not change. These Wilcoxon results changed:
+
+| Target-paired result | `analysis/` p | `analysis_v2/` p |
+| --- | --- | --- |
+| BA loss at 5%, Holm-adjusted | 0.793 | 0.800 |
+| BA loss at 25%, Holm-adjusted | 9.54e-6 | 9.60e-6 |
+| Selection-error trend | 5.65e-4 | 5.75e-4 |
+| Selection-change trend | 3.25e-9 | 5.07e-9 |
+
+The corresponding source-paired rows changed in the same way. All other
+reported p-values, including the balanced-accuracy trend (p = 6.4e-8), are
+unchanged, and no conclusion changes. `analysis_v2/tables/post_hoc_checks.csv`
+(from `scripts/post_hoc_checks.py`) holds the post hoc checks reported in the
+paper. `requirements-lock.txt` records the analysis environment for
+`analysis_v2/`; the run environment was not recorded beyond aeon 1.6.0.
+
 ## Figures (`figures/`, PNG at 300 dpi and PDF)
 
 Produced by `src.plot_final_results`; all intervals are bootstrap CIs over datasets.
 
-1. `fig1_mismatch_cost_by_rate` — target-paired cost by missing rate.
-2. `fig2_conditions_by_rate` — regret and selection error for PP, PB, BP, BB.
-3. `fig3_per_dataset_effect` — dataset-level mean cost for all 64 datasets.
-4. `fig4_classifier_selection` — which classifier is selected vs. best on test.
+1. `fig1_mismatch_cost_by_rate`: target-paired cost by missing rate.
+2. `fig2_conditions_by_rate`: regret and selection error for PP, PB, BP, BB.
+3. `fig3_per_dataset_effect`: dataset-level mean cost for all 64 datasets.
+4. `fig4_classifier_selection`: which classifier is selected vs. best on test.
 
-The supplementary linear-block analysis (`PROTOCOL.md` section 5) is not part of
-these results and will be reported separately.
+The supplementary linear-block analysis (`PROTOCOL.md` section 5.1) is not part
+of these results; it is reported separately in `results/final_linear_block_v1_5/`.

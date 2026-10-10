@@ -328,7 +328,7 @@ Specifically:
 * the point-validation results in `PL` must agree with the primary `PP` validation results;
 * the point-test results in `LP` must agree with the primary `PP` test results.
 
-This verifies that the point-masking procedure and fitted models remain unchanged before the `PP` rows are reused.
+This checks agreement of the recorded balanced accuracies before the `PP` rows are reused; it does not directly establish that the mask arrays, predictions or fitted models are identical.
 
 The assembled robustness result set is stored under:
 

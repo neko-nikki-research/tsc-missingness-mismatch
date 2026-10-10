@@ -1,4 +1,4 @@
-# Linear-block robustness results — protocol v1.5 section 5.1
+# Linear-block robustness results: protocol v1.5 section 5.1
 
 Supplementary sensitivity analysis of the main study. The **only** change is
 that block missingness is a non-wrapping linear contiguous block instead of the
@@ -32,9 +32,12 @@ conditions had a validation tie.
 
 `src.assemble_linear_block` added the main-study PP rows only after verifying,
 for all 64 datasets, that the run's point-side validation (PB) and test (BP)
-balanced accuracies equal the main study's. This confirms that point masks and
-fitted models are unchanged, and that `n_jobs` 24 versus 18 does not affect
-results. The assembled `raw_results.csv` (23,040 rows) and
+balanced accuracies equal the main study's. Recorded point-side balanced
+accuracies agree with the primary values for every candidate, dataset, seed,
+and rate within the assembly tolerance. This supports consistency of the two
+execution paths (including `n_jobs` 24 versus 18) at the metric level; it does
+not directly establish identity of mask arrays, predictions, or fitted
+estimator objects. The assembled `raw_results.csv` (23,040 rows) and
 `selection_results.csv` (7,680 rows) are the analysis input;
 `assembly_manifest.json` records the SHA-256 of both inputs.
 
@@ -53,7 +56,7 @@ signed-rank tests; Holm correction across rates. Positive = mismatch is worse.
 | Target-paired outcome | Linear block | Circular block (main study) |
 | --- | --- | --- |
 | Selected-model test BA lost (= regret increase) | **1.67 pp** (95% CI 1.23–2.14; 54 / 4 / 6 datasets worse / better / equal; p = 1.2e-10) | 1.14 pp (0.79–1.51; p = 1.8e-9) |
-| Selection error increase | **11.2 pp** (7.3–15.4; p = 1.2e-7) | 6.4 pp (3.7–9.4; p = 1.7e-5) |
+| Selection error increase | **11.2 pp** (7.3–15.4; p = 1.2e-7) | 6.4 pp (3.6–9.4; p = 1.7e-5) |
 | Point test: BP vs PP | **2.24 pp** (1.62–2.90; p = 3.2e-9) | 1.84 pp (1.23–2.50; p = 7.4e-7) |
 | Block test: PB vs BB | **1.10 pp** (0.45–1.81; p = 0.013) | 0.44 pp (−0.11–1.03; p = 0.20) |
 | At 5% / 30% missingness | −0.03 pp / **3.65 pp** | −0.03 pp / 2.46 pp |
@@ -66,19 +69,43 @@ pp. The main finding is therefore not an artefact of the circular block
 construction; with linear blocks the mismatch cost is larger, and the
 block-test direction (PB vs BB) also becomes significant.
 
+### Revised analysis (`analysis_v2/`, 2026-10-06 and 2026-10-07)
+
+`analysis/` is the original output and is kept unchanged. `analysis_v2/` uses
+the same inputs and the two numerical changes described in
+`results/final_ucr64_v1_4/README.md` (closed-form trend slopes; dataset-level
+values rounded to 12 decimals before they are summarized). Means, medians and
+CIs moved by less than 1e-12 and direction counts did not change. These
+Wilcoxon results changed (`scripts/compare_analysis_revisions.py`):
+
+| Result | `analysis/` p | `analysis_v2/` p |
+| --- | --- | --- |
+| BA loss at 10%, Holm-adjusted (target-paired) | 0.030 | 0.028 |
+| BA loss at 5%, Holm-adjusted (target-paired) | 0.583 | 0.586 |
+| Selection-error trend (target- and source-paired) | 8.03e-6 | 8.87e-6 |
+| Selection-change trend (target-paired) | 3.61e-8 | 4.24e-8 |
+| Regret trend (source-paired) | 7.39e-9 | 8.59e-9 |
+
+Smaller changes in other source-paired rows are listed by the comparison
+script. The source-paired regret trend now equals the target-paired
+balanced-accuracy trend, as it should, because the oracle is unchanged within
+a source pair. The reported results (trend 0.145, p = 8.6e-9; significance
+from 10% upward) are unchanged. `analysis_v2/tables/post_hoc_checks.csv` holds
+the post hoc checks.
+
 ## Figures (`figures/`, PNG at 300 dpi and PDF)
 
 Produced by `src.plot_final_results`; all intervals are bootstrap CIs over
 datasets.
 
-1. `fig1_mismatch_cost_by_rate` — target-paired cost by missing rate.
-2. `fig2_conditions_by_rate` — regret and selection error for PP, PB, BP, BB.
-3. `fig3_per_dataset_effect` — dataset-level mean cost for all 64 datasets.
-4. `fig4_classifier_selection` — which classifier is selected vs. best on test.
-5. `fig5_circular_vs_linear_block` — target-paired cost under circular (main
+1. `fig1_mismatch_cost_by_rate`: target-paired cost by missing rate.
+2. `fig2_conditions_by_rate`: regret and selection error for PP, PB, BP, BB.
+3. `fig3_per_dataset_effect`: dataset-level mean cost for all 64 datasets.
+4. `fig4_classifier_selection`: which classifier is selected vs. best on test.
+5. `fig5_circular_vs_linear_block`: target-paired cost under circular (main
    study) and linear (this analysis) blocks, by test pattern. Each analysis is
    summarised separately and shown side by side; they are not pooled.
 
 In figures 1–4, B denotes the linear block and each figure carries that
-footnote. Figure 5 shows the point-test cost is nearly the same under both
-constructions, while the block-test cost is larger with linear blocks.
+footnote. Figure 5 shows that the two constructions differ more for
+block-masked tests (1.10 vs 0.44 pp) than for point-masked tests (2.24 vs 1.84 pp).

@@ -1,0 +1,4 @@
+COMPLETE
+64/64 datasets analysed
+source: results\final_ucr64_v1_4
+bootstrap resamples: 10000, seed: 20260928

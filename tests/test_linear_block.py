@@ -41,6 +41,8 @@ def _results(block, pairs, point_scores, rng):
                             "target_pattern": target, "imputer": "linear", "classifier": classifier,
                             "val_balanced_accuracy": val[source, classifier],
                             "test_balanced_accuracy": test[target, classifier],
+                            "val_macro_f1": val[source, classifier] / 2,
+                            "test_macro_f1": test[target, classifier] / 2,
                         })
     raw = pd.DataFrame(raw)
     selection = pd.DataFrame([selection_summary(g.to_dict("records")) for _, g in raw.groupby(KEYS)])
@@ -53,7 +55,7 @@ def _write(path, raw, selection):
     selection.to_csv(path / "selection_results.csv", index=False)
 
 
-def _main_and_supplementary(tmp_path, tamper=False):
+def _main_and_supplementary(tmp_path, tamper=None):
     rng = np.random.default_rng(0)
     point_scores = {
         (d, s, r): ({c: rng.random() for c in CLASSIFIERS}, {c: rng.random() for c in CLASSIFIERS})
@@ -67,7 +69,7 @@ def _main_and_supplementary(tmp_path, tamper=False):
                                       point_scores, rng)
     if tamper:
         row = new_raw.index[new_raw.source_pattern == "point"][0]
-        new_raw.loc[row, "val_balanced_accuracy"] += 0.01
+        new_raw.loc[row, tamper] += 0.01
     _write(new_dir, new_raw, new_selection)
     return main_dir, new_dir
 
@@ -122,8 +124,14 @@ def test_assembled_results_reuse_pp_and_feed_the_paired_analysis(tmp_path):
 
 
 def test_point_side_mismatch_blocks_pp_reuse(tmp_path):
-    main_dir, new_dir = _main_and_supplementary(tmp_path, tamper=True)
+    main_dir, new_dir = _main_and_supplementary(tmp_path, tamper="val_balanced_accuracy")
     with pytest.raises(ValueError, match="PP cannot be reused"):
+        assemble(main_dir, new_dir)
+
+
+def test_point_side_macro_f1_mismatch_blocks_pp_reuse(tmp_path):
+    main_dir, new_dir = _main_and_supplementary(tmp_path, tamper="val_macro_f1")
+    with pytest.raises(ValueError, match="val_macro_f1 differs"):
         assemble(main_dir, new_dir)
 
 
